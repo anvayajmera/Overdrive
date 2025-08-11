@@ -1,18 +1,22 @@
 [project]
 name = "megalithium"
 version = "0.1.0"
-description = "Robot Code for the MegaLithium 2.0 Rescue Line Team for RoboCupJunior Robotics Competition."
+description = "Source code for team MegaLithium2.0 for Rescue Line RobocupJunior Robotics Competition."
 authors = [
     {name = "megalithium20",email = "megalithium2.0@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.10"
-dependencies = [
-    "opencv-python (>=4.12.0.88,<5.0.0.0)"
-]
+requires-python = ">=3.11"
+dynamic = ["dependencies"]
 
 [tool.poetry]
 package-mode = false
+
+[tool.poetry.dependencies]
+numpy = "^2.0.2"
+opencv-contrib-python = { path = "../MegaLithium/wheels/opencv_contrib_python-4.12.0+4924e6b-cp311-cp311-linux_aarch64.whl", platform = "linux"}
+jetcam = { git = "https://github.com/NVIDIA-AI-IOT/jetcam", branch="master"}
+traitlets = "^5.14.3"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
