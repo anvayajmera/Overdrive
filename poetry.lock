@@ -97,8 +97,8 @@ files = [
 numpy = {version = ">=2,<2.3.0", markers = "python_version >= \"3.9\""}
 
 [package.source]
-type = "file"
-url = "wheels/opencv_contrib_python-4.12.0+4924e6b-cp311-cp311-linux_aarch64.whl"
+type = "url"
+url = "https://github.com/megalithium20/PythonWheels/releases/download/v0.0.1/opencv_contrib_python-4.12.0+4924e6b-cp311-cp311-linux_aarch64.whl"
 
 [[package]]
 name = "traitlets"
@@ -119,4 +119,4 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11"
-content-hash = "92504a974f099dca359ccffe460bcb3616b9d43f1cfc99cf66afdbb911ade3d2"
+content-hash = "493b4e47135e1445b00e80353f52f3ab27c6b3c4849d2681f277993bed02c34e"
