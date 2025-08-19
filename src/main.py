@@ -3,8 +3,8 @@ import cv2
 from jetcam.csi_camera import CSICamera
 from ultralytics import YOLO
 
-# Initialize model
-ball_model = YOLO("../models/ball_detect_s.pt")
+# Initialize models
+ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
 
 # Initialize Camera
 camera1 = CSICamera(width=960, height=540, capture_width=1920, capture_height=1080, capture_fps=30)
@@ -19,6 +19,8 @@ cv2.namedWindow(window_name, cv2.WINDOW_AUTOSIZE)
 while camera1.running:
     # Fetch numpy frame from cam
     frame = camera1.value
+
+    frame = frame[:, :, :3]
 
     # Run inference on the frame
     results = ball_model(frame)
