@@ -1,6 +1,7 @@
-import numpy as np
+import os
+os.environ["DISPLAY"] = ":0" # Weird trick to put windows on the jetson
+
 import cv2
-from jetcam.csi_camera import CSICamera
 from ultralytics import YOLO
 
 # Initialize models
@@ -8,10 +9,16 @@ ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
 silver_model = YOLO("./models/silver_classify_s.engine", task="classify")
 
 # Initialize Camera
-camera1 = CSICamera(width=960, height=540, capture_width=1920, capture_height=1080, capture_fps=30, device=1)
+camera1 = cv2.VideoCapture(0, cv2.CAP_V4L2)
+camera1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
+camera1.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+camera1.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+camera1.set(cv2.CAP_PROP_FPS, 60)
 
-# Start camera thread
-camera1.running = True
+# Quit if camera isn't open
+if not camera1.isOpened():
+    print("Camera is not opened")
+    exit()
 
 # Weird trick to detect window closing
 ball_window = "YOLO Ball Inference"
@@ -19,11 +26,13 @@ silver_window = "YOLO Silver Inference"
 cv2.namedWindow(ball_window, cv2.WINDOW_AUTOSIZE)
 cv2.namedWindow(silver_window, cv2.WINDOW_AUTOSIZE)
 
-while camera1.running:
+while True:
     # Fetch numpy frame from cam
-    frame = camera1.value
+    ret, frame = camera1.read()
 
-    frame = frame[:, :, :3]
+    if not ret:
+        print("Can't receive frame...")
+        break
 
     # Run inference on the frame
     ball_results = ball_model(frame)
@@ -33,9 +42,21 @@ while camera1.running:
     ball_annotated_frame = ball_results[0].plot()
     silver_annotated_frame = silver_results[0].plot()
 
+    # Resize with cuda modules
+    gpu_mat = cv2.cuda.GpuMat()
+
+    gpu_mat.upload(ball_annotated_frame)
+    resized_ball_mat = cv2.cuda.resize(gpu_mat, (960, 540))
+
+    gpu_mat.upload(silver_annotated_frame)
+    resized_line_mat = cv2.cuda.resize(gpu_mat, (960, 540))
+
+    resized_ball = resized_ball_mat.download()
+    resized_line = resized_line_mat.download()
+
     # Show results in window
-    cv2.imshow(ball_window, ball_annotated_frame)
-    cv2.imshow(silver_window, silver_annotated_frame)
+    cv2.imshow(ball_window, resized_ball)
+    cv2.imshow(silver_window, resized_line)
 
     # If q is pressed quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -46,5 +67,6 @@ while camera1.running:
     if cv2.getWindowProperty(silver_window, cv2.WND_PROP_AUTOSIZE) < 1:
         break
 
-camera1.running = False
+# When everyting is done release camera and close windows
+camera1.release()
 cv2.destroyAllWindows()
