@@ -6,10 +6,6 @@
   ==================================================================
 -->
 
-This is my journal of the design and building process of **RoboCup Junior Rescue Line Robot**.  
-You can view this journal in more detail on **Hack Club Blueprint** [here](https://blueprint.hackclub.com/projects/74).
-
-
 ## 10/6/2025 - 3D modeled Greartisan 12V DC motors based off of online spec  
 
 Created baseplate for the robot and added screw holes for motors
@@ -18,5 +14,26 @@ Motor mounts loop around the front and the left and right sides of the motor, le
 ![Screenshot 2025-10-06 at 7.36.24 PM.png](https://blueprint.hackclub.com/user-attachments/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6ODI0LCJwdXIiOiJibG9iX2lkIn19--48f60519d34a4ce527445c246582f14315a90623/Screenshot%202025-10-06%20at%207.36.24%E2%80%AFPM.png)
 ![Screenshot 2025-10-06 at 7.36.13 PM.png](https://blueprint.hackclub.com/user-attachments/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6ODIzLCJwdXIiOiJibG9iX2lkIn19--2a41dc367c843da557b378d479943556f4ebc124/Screenshot%202025-10-06%20at%207.36.13%E2%80%AFPM.png)
 ![Screenshot 2025-10-06 at 7.35.33 PM.png](https://blueprint.hackclub.com/user-attachments/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6ODIyLCJwdXIiOiJibG9iX2lkIn19--18f44e1f9e0c0aded0b271b31b7ed4ae385da406/Screenshot%202025-10-06%20at%207.35.33%E2%80%AFPM.png)
+  
+
+## 10/24/2025 - Worked on a full robot upgrade, from electronics to more CAD  
+
+Made the front panels and stuck a camera right in the middle.
+Slid the distance sensors between two plates to keep them steady.
+Screwed those plates onto the baseplate and added another frame on top for extra stability, feels way more secure now.
+Threw in a voltage checker, distance sensors, the Jetson Orin Nano, an Arduino Nano screw terminal, and a buck converter (that grey box-looking thing).
+Added a back plate that holds the distance sensors and voltage checkers on the left side, plus another frame on top of the baseplate to use space more efficiently.
+
+Dropped in an Arduino Nano screw terminal at the front. Added two batteries, one on each side, to keep the weight balanced.
+Started working on the front bumper and figured out where to mount the camera for line tracing.
+Built an arm-claw system and tested a bunch of versions until one finally worked.
+
+
+
+
+![Screenshot 2025-10-24 at 7.55.55 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMyMiwicHVyIjoiYmxvYl9pZCJ9fQ==--2ab582a01699531a2afc2b247187c79ad094a628/Screenshot%202025-10-24%20at%207.55.55%E2%80%AFPM.png)
+
+![Screenshot 2025-10-24 at 7.56.08 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMyMywicHVyIjoiYmxvYl9pZCJ9fQ==--ae924c4163bb4ebb96dc95d3ddb2f117d92f2482/Screenshot%202025-10-24%20at%207.56.08%E2%80%AFPM.png)
+
   
 
