@@ -89,3 +89,12 @@ Thinner claw (roughly 1-2 mm thick, allowing for it to be solid without being bu
 
   
 
+## 10/25/2025 11:32 AM - Fixed a problem with claw/arm to adapt it to robot design  
+
+The new arm/claw was lightweight, but additional changes had to be made when adding it to our robot, as when the claw is rotated upward/downward, the buck boost converter (represented as a blue box) as well as the linetracing camera (orange) got in the way
+
+![Screenshot 2025-10-25 at 11.31.35 AM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTQ2MiwicHVyIjoiYmxvYl9pZCJ9fQ==--1ee5ef601371c984dabf96189889e4de6a1df96e/Screenshot%202025-10-25%20at%2011.31.35%E2%80%AFAM.png)
+
+To get around this, the arm had to bend 90 degrees to remain centered. This is important because to find victims, we use the wide angle camera (centered and mounted on our front plate). This means that when the robot has reached the ball, the ball should be right in front of the camera at the center.
+  
+
