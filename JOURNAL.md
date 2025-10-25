@@ -78,9 +78,9 @@ We originally tried more flat claw designs, but after testing, this did not work
 
 ## 10/25/2025 11:21 AM - Partially finalizing the claw and arm (improvements)  
 
-Afterward, a lot of experimentation was done to ensure the claw would grab the ball securely while minimizing weight. Our design is below:![Screenshot 2025-10-25 at 11.20.43 AM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTQ2MCwicHVyIjoiYmxvYl9pZCJ9fQ==--120e5dd3f36bf1cd6f333e98f7653be0e547b465/Screenshot%202025-10-25%20at%2011.20.43%E2%80%AFAM.png)
+Afterward, a lot of experimentation was done to ensure the claw would grab the ball securely while minimizing weight. We had to iterate many times (and print many times). Our design is below:![Screenshot 2025-10-25 at 11.20.43 AM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTQ2MCwicHVyIjoiYmxvYl9pZCJ9fQ==--120e5dd3f36bf1cd6f333e98f7653be0e547b465/Screenshot%202025-10-25%20at%2011.20.43%E2%80%AFAM.png)
 
-We stayed up overnight since our printer kept failing with our support settings. After playing around with the seetings, tree supports worked well, and the claw worked very well with a ball. Key features include:
+We stayed up overnight since our printer kept failing with our support settings for the final claw print, since it was not flat anymore. After playing around with the seetings, tree supports worked well, and the claw worked very well with a ball. Key features include:
 Spherical design, allowing it to fit better around the ball
 Thinner claw (roughly 1-2 mm thick, allowing for it to be solid without being bulky)
 ![Screenshot 2025-10-25 at 11.21.39 AM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTQ2MSwicHVyIjoiYmxvYl9pZCJ9fQ==--37377ba20338155626898e5a2111faccbb9aef3d/Screenshot%202025-10-25%20at%2011.21.39%E2%80%AFAM.png)
