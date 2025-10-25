@@ -98,3 +98,14 @@ The new arm/claw was lightweight, but additional changes had to be made when add
 To get around this, the arm had to bend 90 degrees to remain centered. This is important because to find victims, we use the wide angle camera (centered and mounted on our front plate). This means that when the robot has reached the ball, the ball should be right in front of the camera at the center.
   
 
+## 10/25/2025 4 PM - Finalized the initial working prototype of robot CAD  
+
+We created a third platform, a ramp structure on the back half of the robot, for storing victims (represented as metal balls in RCJ).
+The ramp structure makes it so that balls will roll toward the bottom naturally, and a system will be created with the microservo at the back of the third platform for releasing the victims
+Moreover, we created a battery mount that also functions as a mount for the distance sensors
+A new platform (the grey one to the left of the camera) on top of the frame for attaching the buck boost converters is there as well.![Screenshot 2025-10-25 at 4.54.27 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTU0NSwicHVyIjoiYmxvYl9pZCJ9fQ==--dc3354de641f71118602ec191fba1ab265bd2db6/Screenshot%202025-10-25%20at%204.54.27%E2%80%AFPM.png)
+
+We iterated the 3rd platform and the battery mounts numerous times to get to this version.
+
+  
+
