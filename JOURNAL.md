@@ -61,3 +61,12 @@ First arm design:
 
   
 
+## 10/24/2025 8:28 PM - Continued to develop arm system for the robot  
+
+Two MG90s microservos added to control the claws
+1 TD 8120mg servo with 20 kg torque for moving the entire arm and claw
+This arm design was too heavy, however.
+Also, it had to be printed in two parts, which isn’t efficient, thus was changed
+![Screenshot 2025-10-24 at 8.28.05 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzNiwicHVyIjoiYmxvYl9pZCJ9fQ==--ac6db1a956d75755987a82fc505a598d4832908a/Screenshot%202025-10-24%20at%208.28.05%E2%80%AFPM.png)
+  
+
