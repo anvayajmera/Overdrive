@@ -29,7 +29,7 @@ We're really unsure about the ToF sensors right now, but we'll keep what we have
 
   
 
-## 10/24/2025 8 PM - Developed additional CAD for electronics  
+## 10/24/2025 8:25 PM - Developed additional CAD for electronics  
 
 
 Threw in a voltage checker, distance sensors, the Jetson Orin Nano, an Arduino Nano screw terminal, and a buck converter (that grey box-looking thing).
@@ -38,5 +38,13 @@ Added a back plate that holds the distance sensors and voltage checkers on the l
 Dropped in an Arduino Nano screw terminal at the front. Added two batteries, one on each side, to keep the weight balanced.
 ![Screenshot 2025-10-24 at 8.25.10 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzMywicHVyIjoiYmxvYl9pZCJ9fQ==--b0d13700341f6320900caf029982880faec5c0cf/Screenshot%202025-10-24%20at%208.25.10%E2%80%AFPM.png)
 
+  
+
+## 10/24/2025 8:26 PM - Developed initial front bumper prototype  
+
+Started working on the front bumper and figured out where to mount the camera for line tracing.
+Built an arm-claw system and tested a bunch of versions until one finally worked.
+
+The issue we're having here is that we want to keep the robot length under 25cm, but the front bumper makes it reach 24cm. However, removing it would not allow us to have LEDs on our robot. ![Screenshot 2025-10-24 at 8.26.03 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzNCwicHVyIjoiYmxvYl9pZCJ9fQ==--188550c333b4222e76564de5a1804e0a8d55e6de/Screenshot%202025-10-24%20at%208.26.03%E2%80%AFPM.png)
   
 
