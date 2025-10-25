@@ -70,3 +70,9 @@ Also, it had to be printed in two parts, which isn’t efficient, thus was chang
 ![Screenshot 2025-10-24 at 8.28.05 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzNiwicHVyIjoiYmxvYl9pZCJ9fQ==--ac6db1a956d75755987a82fc505a598d4832908a/Screenshot%202025-10-24%20at%208.28.05%E2%80%AFPM.png)
   
 
+## 10/25/2025 - Now that the arm is mostly complete, working on claw design  
+
+We originally tried more flat claw designs, but after testing, this did not work because of key flaws. It was too complex and didn't secure the ball well, especially since the microservos aren't that strong. Soon, we'll try changing and iterating our design.![Screenshot 2025-10-25 at 11.19.47 AM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTQ1OSwicHVyIjoiYmxvYl9pZCJ9fQ==--4d92024d300258677def1d46b1da9c8f62271960/Screenshot%202025-10-25%20at%2011.19.47%E2%80%AFAM.png)
+
+  
+
