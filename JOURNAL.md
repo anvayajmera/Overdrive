@@ -48,3 +48,16 @@ Built an arm-claw system and tested a bunch of versions until one finally worked
 The issue we're having here is that we want to keep the robot length under 25cm, but the front bumper makes it reach 24cm. However, removing it would not allow us to have LEDs on our robot. ![Screenshot 2025-10-24 at 8.26.03 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzNCwicHVyIjoiYmxvYl9pZCJ9fQ==--188550c333b4222e76564de5a1804e0a8d55e6de/Screenshot%202025-10-24%20at%208.26.03%E2%80%AFPM.png)
   
 
+## 10/24/2025 8:27 PM - Started developing a complex arm/claw system  
+
+Created arm-claw system, tested multiple iterations until a working version was established
+First set out on creating an arm design.
+
+We are aware that this will need additional improvement.
+
+First arm design:
+
+![Screenshot 2025-10-24 at 8.26.53 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzNSwicHVyIjoiYmxvYl9pZCJ9fQ==--42a4218ad779a8ae2dc967b43e5083acde945fe5/Screenshot%202025-10-24%20at%208.26.53%E2%80%AFPM.png)
+
+  
+
