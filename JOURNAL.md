@@ -16,7 +16,7 @@ Motor mounts loop around the front and the left and right sides of the motor, le
 ![Screenshot 2025-10-06 at 7.35.33 PM.png](https://blueprint.hackclub.com/user-attachments/blobs/redirect/eyJfcmFpbHMiOnsiZGF0YSI6ODIyLCJwdXIiOiJibG9iX2lkIn19--18f44e1f9e0c0aded0b271b31b7ed4ae385da406/Screenshot%202025-10-06%20at%207.35.33%E2%80%AFPM.png)
   
 
-## 10/24/2025 - Developed front panel system for robot CAD  
+## 10/24/2025 7 PM - Developed front panel system for robot CAD  
 
 Made the front panels and stuck a camera right in the middle.
 Slid the distance sensors between two plates to keep them steady.
@@ -26,6 +26,17 @@ We're really unsure about the ToF sensors right now, but we'll keep what we have
 
 ![Screenshot 2025-10-24 at 8.23.46 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzMiwicHVyIjoiYmxvYl9pZCJ9fQ==--45b0332d8de7fc23a803457bfaacd3a2db7a5d57/Screenshot%202025-10-24%20at%208.23.46%E2%80%AFPM.png)
 
+
+  
+
+## 10/24/2025 8 PM - Developed additional CAD for electronics  
+
+
+Threw in a voltage checker, distance sensors, the Jetson Orin Nano, an Arduino Nano screw terminal, and a buck converter (that grey box-looking thing).
+Added a back plate that holds the distance sensors and voltage checkers on the left side, plus another frame on top of the baseplate to use space more efficiently.
+
+Dropped in an Arduino Nano screw terminal at the front. Added two batteries, one on each side, to keep the weight balanced.
+![Screenshot 2025-10-24 at 8.25.10 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTMzMywicHVyIjoiYmxvYl9pZCJ9fQ==--b0d13700341f6320900caf029982880faec5c0cf/Screenshot%202025-10-24%20at%208.25.10%E2%80%AFPM.png)
 
   
 
