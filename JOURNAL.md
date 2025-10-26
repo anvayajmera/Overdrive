@@ -109,3 +109,17 @@ We iterated the 3rd platform and the battery mounts numerous times to get to thi
 
   
 
+## 10/25/2025 11 PM - Developed 3rd platform system (testing still needed)  
+
+Added a microservo in the back of the third platform for controlling which section on the third platform is released
+(in RCJ rescue line, silver balls representing live victims have to be released in one area, while black balls representing dead victims have to be released in another)
+![Screenshot 2025-10-25 at 11.34.37 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTYxMiwicHVyIjoiYmxvYl9pZCJ9fQ==--32c54d42d9f3368507360a54469a61c84b2013ea/Screenshot%202025-10-25%20at%2011.34.37%E2%80%AFPM.png)
+
+A “wing” was created to be attached to the microservo
+This wing would rotate, and should allow one sides balls to roll off the ramp, while the others stays on the platform
+However, when the wing tilts downward to one side, it’s possible for the balls on the other side to roll out too if they’re on the far left/right sides of the third platform
+Lastly, bumps were added to the wings so that when one side tilts downward, and the other side tilts upward, the wings go up as well, preventing the balls on the far sides from slipping through
+
+![Screenshot 2025-10-25 at 11.35.31 PM](https://blueprint.hackclub.com/user-attachments/blobs/proxy/eyJfcmFpbHMiOnsiZGF0YSI6NTYxMywicHVyIjoiYmxvYl9pZCJ9fQ==--9f990e97873fa4c5446fc0342d1fab33404eee74/Screenshot%202025-10-25%20at%2011.35.31%E2%80%AFPM.png)
+  
+
