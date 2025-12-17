@@ -1,4 +1,4 @@
-import RPi.GPIO as GPIO
+import Jetson.GPIO as GPIO
 
 class Motor:
     # in1 is PWM, in2 is DIR

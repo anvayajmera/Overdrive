@@ -2,33 +2,33 @@ import os, time
 os.environ["DISPLAY"] = ":0" # Weird trick to put windows on the jetson
 
 import cv2
-import RPi.GPIO as GPIO
+import Jetson.GPIO as GPIO
 from ultralytics import YOLO
 from motor import Motor
 
 # Setup GPIO + initialize motors
 GPIO.setmode(GPIO.BCM)
-l1: Motor = Motor(32, 16)
-l2: Motor = Motor(33, 18)
-r1: Motor = Motor(35, 22)
-r2: Motor = Motor(37, 24)
+l1: Motor = Motor(33, 15)
+# l2: Motor = Motor(33, 18)
+# r1: Motor = Motor(35, 22)
+# r2: Motor = Motor(37, 24)
 
 try:
     l1.set_speed(100)
-    l2.set_speed(100)
-    r1.set_speed(100)
-    r2.set_speed(100)
+    # l2.set_speed(100)
+    # r1.set_speed(100)
+    # r2.set_speed(100)
 
     time.sleep(3)
 
     l1.reverse()
-    l2.reverse()
-    r1.reverse()
-    r2.reverse()
+    # l2.reverse()
+    # r1.reverse()
+    # r2.reverse()
     time.sleep(3)
 
 finally:
-    del l1, l2, r1, r2
+    del l1
     GPIO.cleanup()
 
 # # Initialize models
