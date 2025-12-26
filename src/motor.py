@@ -4,8 +4,11 @@ class Motor:
     # in1 is PWM, in2 is DIR
     def __init__(self, in1: int, in2: int):
         # Setup pins
-        GPIO.setup(in1, GPIO.OUT)
-        GPIO.setup(in2, GPIO.OUT)
+        try:
+            GPIO.setup(in1, GPIO.OUT)
+            GPIO.setup(in2, GPIO.OUT)
+        except Exception as e:
+            print(f"Error occurred: {e}")
 
         self.IN1 = in1
         self.IN2 = in2
