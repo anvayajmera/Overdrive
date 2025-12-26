@@ -2,6 +2,7 @@ import Jetson.GPIO as GPIO
 import board, time
 import adafruit_vl53l4cd
 import adafruit_tca9548a
+import adafruit_ssd1306
 from typing import List
 
 # print("Mode is", GPIO.getmode())
@@ -16,8 +17,6 @@ k: list(GPIO.gpio_pin_data.get_data()[-1]['TEGRA_SOC'].keys())[i] for i, k in en
 # for k, v in board_to_tegra.items():
 #     print('board #:', k, 'tegra:', v)
 
-
-
 touchPin = board_to_tegra[7]
 # print(touchPin)
 GPIO.setup(touchPin, GPIO.IN)
@@ -29,10 +28,17 @@ for channel in range(8):
         print([hex(address) for address in addresses if address != 0x70])
         pca[channel].unlock()
 
+oledChannel = 6
+oled = adafruit_ssd1306.SSD1306_I2C(128, 64, pca[oledChannel])
+
+oled.fill(0)
+oled.text("Press CTRL+C to exit", 0, 0)
+oled.show()
+
 # Facing the robot, 0 is Left and 3 is right,
-# sensorChannels = [0, 3]
+# distanceSensors = [0, 3]
 # sensors: List[adafruit_vl53l4cd.VL53L4CD] = []
-# for ch in sensorChannels:
+# for ch in distanceSensors:
 #     vl53 = adafruit_vl53l4cd.VL53L4CD(pca[ch])
 #     vl53.timing_budget = 200
 #     vl53.inter_measurement = 0
