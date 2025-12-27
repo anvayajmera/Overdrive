@@ -3,6 +3,7 @@ import board, time
 import adafruit_vl53l4cd
 import adafruit_tca9548a
 import adafruit_ssd1306
+import adafruit_mpu6050
 from typing import List
 
 # print("Mode is", GPIO.getmode())
@@ -28,8 +29,11 @@ for channel in range(8):
         print([hex(address) for address in addresses if address != 0x70])
         pca[channel].unlock()
 
-oledChannel = 6
+oledChannel = 5
 oled = adafruit_ssd1306.SSD1306_I2C(128, 64, pca[oledChannel])
+
+mpuChannel = 1
+mpu = adafruit_mpu6050.MPU6050(pca[mpuChannel])
 
 oled.fill(0)
 oled.text("Press CTRL+C to exit", 0, 0)
@@ -48,6 +52,11 @@ oled.show()
 while True:
     if GPIO.input(touchPin):
         print("Touch sensor is touched.")
+    time.sleep(0.1)
+
+    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (mpu.acceleration))
+    print("Gyro X:%.2f, Y: %.2f, Z: %.2f degrees/s" % (mpu.gyro))
+
     time.sleep(0.1)
 
     # for idx, sensor in enumerate(sensors):
