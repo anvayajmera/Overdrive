@@ -5,6 +5,7 @@ import adafruit_tca9548a
 import adafruit_ssd1306
 import adafruit_mpu6050
 from typing import List
+from PIL import Image, ImageDraw, ImageFont
 
 # print("Mode is", GPIO.getmode())
 
@@ -28,16 +29,29 @@ for channel in range(8):
         addresses = pca[channel].scan()
         print([hex(address) for address in addresses if address != 0x70])
         pca[channel].unlock()
+#
+# print(pca[5])
 
-oledChannel = 5
-oled = adafruit_ssd1306.SSD1306_I2C(128, 64, pca[oledChannel])
+# oledChannel = 5
+# oled = adafruit_ssd1306.SSD1306_I2C(128, 64, pca[oledChannel], addr=0x3D)
+
+time.sleep(0.2)
 
 mpuChannel = 1
-mpu = adafruit_mpu6050.MPU6050(pca[mpuChannel])
+mpu = adafruit_mpu6050.MPU6050(pca[mpuChannel], address=0x68)
 
-oled.fill(0)
-oled.text("Press CTRL+C to exit", 0, 0)
-oled.show()
+# oled.fill(0)
+# oled.show()
+#
+# image = Image.new("1", (oled.width, oled.height))
+# draw = ImageDraw.Draw(image)
+#
+# font = ImageFont.load_default()
+#
+# draw.text((0, 0), "Hello!", font=font, fill=255)
+#
+# oled.image(image)
+# oled.show()
 
 # Facing the robot, 0 is Left and 3 is right,
 # distanceSensors = [0, 3]
@@ -50,12 +64,12 @@ oled.show()
 #     sensors.append(vl53)
 
 while True:
-    if GPIO.input(touchPin):
-        print("Touch sensor is touched.")
-    time.sleep(0.1)
+    # if GPIO.input(touchPin):
+    #     print("Touch sensor is touched.")
+    # time.sleep(0.1)
 
-    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (mpu.acceleration))
-    print("Gyro X:%.2f, Y: %.2f, Z: %.2f degrees/s" % (mpu.gyro))
+    # print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (mpu.acceleration))
+    # print("Gyro X:%.2f, Y: %.2f, Z: %.2f degrees/s" % (mpu.gyro))
 
     time.sleep(0.1)
 
