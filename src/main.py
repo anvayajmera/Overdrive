@@ -37,13 +37,13 @@ ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
 silver_model = YOLO("./models/silver_classify_s.engine", task="classify")
 
 # Initialize Camera
-camera1 = cv2.VideoCapture(0, cv2.CAP_V4L2)
+camera1 = cv2.VideoCapture(2, cv2.CAP_V4L2)
 camera1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
 camera1.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 camera1.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 camera1.set(cv2.CAP_PROP_FPS, 60)
 
-camera2 = cv2.VideoCapture(2, cv2.CAP_V4L2)
+camera2 = cv2.VideoCapture(0, cv2.CAP_V4L2)
 camera2.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
 camera2.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
 camera2.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)

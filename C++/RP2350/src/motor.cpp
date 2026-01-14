@@ -1,31 +1,35 @@
 #include "motor.hpp"
-#include <Arduino.h>
 
-Motor::Motor(int IN1, int IN2) : IN1(IN1), IN2(IN2) {}
-
-void Motor::setup()
-{
-    pinMode(IN1, OUTPUT);
-    pinMode(IN2, OUTPUT);
-
-    Motor::speed = 0;
-    digitalWrite(IN2, LOW);
+Motor::Motor(int IN1, int IN2) {
+    _pin1 = IN1;
+    _pin2 = IN2;
+    _isReversed = false;
 }
 
-void Motor::setSpeed(int speed)
-{
-    Motor::speed = (int)(((double)speed / 100) * 255);
-    analogWrite(IN1, Motor::speed);
+void Motor::setup() {
+    pinMode(_pin1, OUTPUT);
+    pinMode(_pin2, OUTPUT);
+    stop();
 }
 
-void Motor::stop()
-{
-    setSpeed(0);
+void Motor::stop() {
+    analogWrite(_pin1, 0);
+    analogWrite(_pin2, 0);
+    digitalWrite(_pin1, LOW);
+    digitalWrite(_pin2, LOW);
 }
 
-void Motor::reverse()
-{
-    analogWrite(IN1, 0);
-    digitalWrite(IN2, HIGH);
-    analogWrite(IN1, Motor::speed);
+void Motor::reverse() {
+    _isReversed = !_isReversed;
+}
+
+void Motor::setSpeed(int speed) {
+    int val = map(constrain(speed, 0, 100), 0, 100, 0, 255);
+    if (!_isReversed) {
+        digitalWrite(_pin2, LOW);
+        analogWrite(_pin1, val);
+    } else {
+        digitalWrite(_pin1, LOW);
+        analogWrite(_pin2, val);
+    }
 }
