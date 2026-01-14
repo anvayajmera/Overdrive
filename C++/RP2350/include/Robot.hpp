@@ -5,6 +5,8 @@
 class Robot
 {
 public:
+    static Robot &getRobot();
+
     Robot();
     void setup();
     void parseInput();

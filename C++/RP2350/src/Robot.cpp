@@ -1,7 +1,15 @@
 #include "Robot.hpp"
 #include "constants.hpp"
 
-static Robot *RobotInstance;
+static Robot *instance = NULL;
+
+Robot &Robot::getRobot()
+{
+    if (!instance)
+        instance = new Robot();
+
+    return *instance;
+}
 
 Robot::Robot()
 {
