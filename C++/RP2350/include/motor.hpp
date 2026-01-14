@@ -1,20 +1,19 @@
-#ifndef MOTOR_HPP
-#define MOTOR_HPP
+#pragma once;
 
 #include <Arduino.h>
 
-class Motor {
+class Motor
+{
 public:
+    Motor();
     Motor(int IN1, int IN2);
     void setup();
-    void setSpeed(int speed); 
+    void setSpeed(int speed);
     void stop();
-    void reverse(); 
+    void reverse();
 
 private:
     int _pin1;
     int _pin2;
     bool _isReversed;
 };
-
-#endif
