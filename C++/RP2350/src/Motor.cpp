@@ -35,7 +35,7 @@ void Motor::reverse()
 
 void Motor::setSpeed(int speed)
 {
-    int val = map(constrain(speed, 0, 100), 0, 100, 0, 255);
+    int val = map(constrain(abs(speed), 0, 100), 0, 100, 0, 255);
 
     speed *= _isReversed ? -1 : 1; 
 

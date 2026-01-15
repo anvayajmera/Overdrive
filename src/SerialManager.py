@@ -19,13 +19,14 @@ class SerialManager:
 
         self._initialized = True
 
-    def send(self, command, arg1, arg2):
-        packet = bytearray(5)
+    def send(self, command, arg1, arg2, arg3 = 1):
+        packet = bytearray(6)
         packet[0] = START_BYTE
         packet[1] = command
         packet[2] = arg1
         packet[3] = arg2
-        packet[4] = packet[0] ^ packet[1] ^ packet[2] ^ packet[3]
+        packet[4] = arg3
+        packet[5] = packet[0] ^ packet[1] ^ packet[2] ^ packet[3]
 
         self.ser.write(packet)
         return self.ser.readline().decode().strip()

@@ -6,3 +6,4 @@
 
 #define START_BYTE 0xAA
 #define SET_MOTOR_SPEED 0x01
+#define COMMAND_SIZE 6
