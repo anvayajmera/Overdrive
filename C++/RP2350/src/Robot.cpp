@@ -67,7 +67,7 @@ void Robot::handlePacket()
     switch (serialBuff[1])
     {
     case SET_MOTOR_SPEED:
-        Serial.printf("Received Request for Motor %d speed %d", serialBuff[2], serialBuff[3]);
+        Serial.printf("Received Request for Motor %d speed %d\n", serialBuff[2], serialBuff[3]);
         break;
     }
 }

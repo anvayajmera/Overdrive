@@ -9,7 +9,7 @@ class SerialManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, port="/dev/ttyUSB0", baud=115200):
+    def __init__(self, port="/dev/ttyACM0", baud=115200):
         if getattr(self, '_initialized', False):
             return
 
