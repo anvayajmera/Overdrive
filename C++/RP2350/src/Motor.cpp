@@ -1,4 +1,4 @@
-#include "motor.hpp"
+#include "Motor.hpp"
 
 Motor::Motor()
 {
@@ -36,7 +36,10 @@ void Motor::reverse()
 void Motor::setSpeed(int speed)
 {
     int val = map(constrain(speed, 0, 100), 0, 100, 0, 255);
-    if (!_isReversed)
+
+    speed *= _isReversed ? -1 : 1; 
+
+    if (speed > 0)
     {
         digitalWrite(_pin2, LOW);
         analogWrite(_pin1, val);

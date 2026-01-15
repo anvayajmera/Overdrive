@@ -55,6 +55,8 @@ void Robot::parseInput()
 
                 if (crc == serialBuff[4])
                     handlePacket();
+
+                serialBuffInd = 0; 
             }
         }
     }
