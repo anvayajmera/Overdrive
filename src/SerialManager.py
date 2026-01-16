@@ -1,4 +1,4 @@
-from constants import START_BYTE
+from .constants import START_BYTE
 import serial
 
 class SerialManager:

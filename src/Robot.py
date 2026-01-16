@@ -1,6 +1,6 @@
-import SerialManager
+from . import SerialManager
 
-import Motor
+from . import Motor
 
 class Robot:
     _instance = None
