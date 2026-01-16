@@ -1,5 +1,7 @@
 import SerialManager
 
+import Motor
+
 class Robot:
     _instance = None
 
@@ -14,3 +16,6 @@ class Robot:
 
         self._initialized = True
         self.sm = SerialManager.SerialManager()
+        self.motors = [Motor.Motor(i) for i in range(4)]
+
+

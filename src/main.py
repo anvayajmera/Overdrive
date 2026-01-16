@@ -1,8 +1,8 @@
-import Robot, time
-from constants import SET_MOTOR_SPEED
+import Robot
 
 r = Robot.Robot()
 
-
-print(r.sm.send(SET_MOTOR_SPEED, 0, 0))
-
+r.motors[0].setSpeed(100)
+r.motors[1].setSpeed(100)
+r.motors[2].setSpeed(-100)
+r.motors[3].setSpeed(-100)
