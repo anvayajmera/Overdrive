@@ -4,7 +4,7 @@ os.environ["DISPLAY"] = ":0" # Weird trick to put windows on the jetson
 import cv2
 import Jetson.GPIO as GPIO
 from ultralytics import YOLO
-from Motor import Motor
+from lib.Motor import Motor
 
 # Setup GPIO + initialize motors
 # GPIO.setmode(GPIO.BOARD)
