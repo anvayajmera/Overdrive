@@ -1,6 +1,6 @@
 from ultralytics import YOLO
 
-model = YOLO("./models/ball_detect_s.pt")
+model = YOLO("./models/silver_classify_s.pt")
 
 model.export(format="engine")
 
