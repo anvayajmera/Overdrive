@@ -1,7 +1,7 @@
 import cv2, time
-from lib.Robot import Robot
-from lib.linetrace import linetrace, init
-from lib.constants import GUI
+from classes.Robot import Robot
+from classes.linetrace import linetrace, init
+from classes.constants import GUI
 
 r = Robot()
 
