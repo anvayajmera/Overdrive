@@ -3,23 +3,42 @@ import numpy as np
 from .Robot import Robot
 from .constants import GUI, BLACK_THRESHOLD, ANGLE_MULTIPLIER
 
-def draw_fitline(vx, vy, x0, y0, roi_top: int, roi_h: int, thickness=2):
-    # Choose two y's in ROI coords: top and bottom of ROI
-    y1 = 0
-    y2 = roi_h - 1
+def draw_fitline(vx, vy, x0, y0, roi_top: int, roi_h: int, w: int, thickness=2):
+    eps = 1e-1
 
-    # Compute corresponding x's on the line: x = x0 + (y - y0) * vx/vy
-    if abs(vy) < 1e-6:
-        return ((0, 0), (0, 0))# avoid divide by zero (nearly horizontal in ROI coords)
+    # Prefer whichever component is larger to avoid divide-by-zero
+    if abs(vy) > eps:
+        # Choose two y's in ROI coords: top and bottom of ROI
+        y1, y2 = 0, roi_h - 1
+        
+        # Compute corresponding x's on the line: x = x0 + (y - y0) * vx/vy
+        x1 = x0 + (y1 - y0) * (vx / vy)
+        x2 = x0 + (y2 - y0) * (vx / vy)
 
-    x1 = int(x0 + (y1 - y0) * (vx / vy))
-    x2 = int(x0 + (y2 - y0) * (vx / vy))
+        # Convert ROI coords -> full frame coords by adding roi_top to y
+        p1 = (int(round(x1)), int(roi_top + y1))
+        p2 = (int(round(x2)), int(roi_top + y2))
 
-    # Convert ROI coords -> full frame coords by adding roi_top to y
-    p1 = (x1, roi_top + y1)
-    p2 = (x2, roi_top + y2)
-    
-    return (p2, p1)
+    elif abs(vx) > eps:
+        # Choose two x's in ROI coords: left and right of ROI
+        x1, x2 = 0, w - 1
+        
+        # Compute corresponding y's on the line: y = y0 + (x-x0) * vy/vx
+        y1 = y0 + (x1 - x0) * (vy / vx)
+        y2 = y0 + (x2 - x0) * (vy / vx)
+
+        # Convert ROI coords -> full frame coords by adding roi_top to y
+        p1 = (int(round(x1)), int(round(roi_top + y1)))
+        p2 = (int(round(x2)), int(round(roi_top + y2)))
+
+    else:
+        # vx and vy are both ~0 
+        y = int(round(roi_top + y0))
+        x = int(round(x0))
+        p1 = (x, y)
+        p2 = (x, y)
+
+    return p2, p1
 
 # =========================================================
 # BLACK LINE OFFSET + VISUALIZATION
@@ -56,11 +75,25 @@ def get_line_control(frame: np.ndarray, blurred: np.ndarray, prevStart: tuple[in
     # Lookahead y (in ROI coords)
     roi_h = h - roi_top # Max height of the ROI
     y_la = int(roi_h * lookahead_ratio) # The portion of the ROI that we are looking at to predict
+    x_la = 0.0
+    
+    if abs(vy) > 1e-1:
+        t = (y_la - y0) / vy
+        x_la = float(x0 + t * vx)
+        # print("Using vy: ", vy)
+    else:
+        # Near-horizontal: use mask band at y_la
+        y1 = max(0, y_la - 5)
+        y2 = min(mask.shape[0], y_la + 5)
+        band = mask[y1:y2, :]
+        xs = np.where(band > 0)[1]
+        x_la = float(xs.mean()) if xs.size else float(x0)
+        # print("Using 1D COM")
+        
 
-    t = (y_la - y0) / vy # the so called time, that it would take ot reach that point following hte line
-    x_la = int(x0 + t * vx) # The corresponding x value for the predicted point
-
-    (p1, p2) = draw_fitline(vx, vy, x0, y0, roi_top, roi_h)
+    x_la = int(np.clip(x_la, 0, w - 1))
+    
+    (p1, p2) = draw_fitline(vx, vy, x0, y0, roi_top, roi_h, w)
     
     newStart = (0, 0)
     newEnd = (0, 0)
@@ -106,6 +139,7 @@ def get_line_control(frame: np.ndarray, blurred: np.ndarray, prevStart: tuple[in
     
         cv2.circle(frame, newStart, 20, (255, 0, 255), -1)
         cv2.circle(frame, newEnd, 20, (0, 120, 255), -1)
+        cv2.circle(frame, (x_la, roi_top + y_la), 20, (0, 255, 0), -1)
         
     
         # if pt is not None:
