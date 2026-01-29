@@ -37,8 +37,9 @@ class Robot:
         
         self.lt_start: tuple[int, int] = (0, 0)
         self.lt_end: tuple[int, int] = (0, 0)
+        self.dir: tuple[float, float] = (0.0, 1.0)
         
-        self.m_pid = PID(0.05, 0, 0.05)
+        self.m_pid = PID(0.1, 0, 0.05)
        
     def set_left_speed(self, speed: int):
         self.motors[0].set_speed(speed)

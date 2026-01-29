@@ -7,9 +7,9 @@ def draw_fitline(vx, vy, x0, y0, roi_top: int, roi_h: int, w: int, thickness=2):
     eps = 1e-1
 
     # Prefer whichever component is larger to avoid divide-by-zero
-    if abs(vy) > eps:
+    if abs(vy) > abs(vx):
         # Choose two y's in ROI coords: top and bottom of ROI
-        y1, y2 = 0, roi_h - 1
+        y2, y1 = 0, roi_h - 1
         
         # Compute corresponding x's on the line: x = x0 + (y - y0) * vx/vy
         x1 = x0 + (y1 - y0) * (vx / vy)
@@ -19,7 +19,7 @@ def draw_fitline(vx, vy, x0, y0, roi_top: int, roi_h: int, w: int, thickness=2):
         p1 = (int(round(x1)), int(roi_top + y1))
         p2 = (int(round(x2)), int(roi_top + y2))
 
-    elif abs(vx) > eps:
+    else:
         # Choose two x's in ROI coords: left and right of ROI
         x1, x2 = 0, w - 1
         
@@ -30,20 +30,13 @@ def draw_fitline(vx, vy, x0, y0, roi_top: int, roi_h: int, w: int, thickness=2):
         # Convert ROI coords -> full frame coords by adding roi_top to y
         p1 = (int(round(x1)), int(round(roi_top + y1)))
         p2 = (int(round(x2)), int(round(roi_top + y2)))
-
-    else:
-        # vx and vy are both ~0 
-        y = int(round(roi_top + y0))
-        x = int(round(x0))
-        p1 = (x, y)
-        p2 = (x, y)
-
-    return p2, p1
+        
+    return p1, p2
 
 # =========================================================
 # BLACK LINE OFFSET + VISUALIZATION
 # =========================================================
-def get_line_control(frame: np.ndarray, blurred: np.ndarray, prevStart: tuple[int, int], prevEnd: tuple[int, int], roi_top_ratio=0.3, lookahead_ratio=0.35):
+def get_line_control(frame: np.ndarray, blurred: np.ndarray, prevStart: tuple[int, int], prev_dir: tuple[float, float], roi_top_ratio=0.3, lookahead_ratio=0.35):
     h, w = frame.shape[:2] 
     roi_top = int(h * roi_top_ratio) 
     roi = blurred[roi_top:h, :] # Only fetch bottom of screen
@@ -150,7 +143,7 @@ def get_line_control(frame: np.ndarray, blurred: np.ndarray, prevStart: tuple[in
         cv2.putText(frame, f"offset:{error_px} ang:{math.degrees(angle):.2f}", (20, h - 20),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0,0,255), 4)
 
-    return error_px, angle, mask, pt, (p1, p2)
+    return error_px, angle, mask, (vx,vy), (p1, p2)
 # =========================================================
 # MAIN
 # =========================================================
@@ -166,10 +159,11 @@ def linetrace():
     
     h, w = frame.shape[:2]
     
-    error, angle, black_mask, pt, (p1, p2) = get_line_control(frame, blurred, r.lt_start, r.lt_end)
+    error, angle, black_mask, pt, (p1, p2) = get_line_control(frame, blurred, r.lt_start, r.dir)
     
     r.lt_start = p1
     r.lt_end = p2
+    r.dir = pt
     
     # top, left, right = count_black_pixels(frame, blurred)
     

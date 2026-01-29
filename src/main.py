@@ -1,7 +1,10 @@
-import cv2, time
+import cv2, time, os
 from classes.Robot import Robot
 from classes.linetrace import linetrace, init
 from classes.constants import GUI
+
+if GUI:
+    os.environ.setdefault("DISPLAY", ":0")
 
 r = Robot()
 
@@ -10,7 +13,7 @@ init();
 try:
     while True:
         time.sleep(0.05)
-        
+
         linetrace()
         
         if GUI:

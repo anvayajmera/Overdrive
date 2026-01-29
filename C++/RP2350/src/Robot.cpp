@@ -39,7 +39,7 @@ void Robot::update()
 
 void Robot::parseInput()
 {
-    if (Serial.available())
+    while (Serial.available())
     {
         uint8_t b = Serial.read();
 
@@ -71,7 +71,7 @@ void Robot::handlePacket()
     {
     case SET_MOTOR_SPEED:
         int speed = serialBuff[4] > 1 ? (int)serialBuff[3] * -1 : serialBuff[3];
-        Serial.printf("Received set motor command: Motor %d set to speed %d\n", serialBuff[2], speed);
+        Serial.printf("OK");
 
         motors[serialBuff[2]].setSpeed(speed);
         break;
