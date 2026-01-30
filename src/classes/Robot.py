@@ -1,8 +1,11 @@
 from .SerialManager import SerialManager
 from .Motor import Motor
-from simple_pid import PID
 
-import cv2
+from simple_pid import PID
+from adafruit_bno055 import BNO055_I2C
+from constants import TIMESTEP
+
+import cv2, board, time
 
 class Robot:
     _instance = None
@@ -15,6 +18,9 @@ class Robot:
     def __init__(self):
         if getattr(self, "_initialized", False):
             return
+
+        board_to_tegra = {k: list(GPIO.gpio_pin_data.get_data()[-1]['TEGRA_SOC'].keys())[i] for i, k in enumerate(GPIO.gpio_pin_data.get_data()[-1]['BOARD'])} # type: ignore
+
 
         self._initialized = True
         self.sm = SerialManager()
@@ -35,9 +41,10 @@ class Robot:
         self.line_cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         self.line_cam.set(cv2.CAP_PROP_FPS, 60)
         
-        self.lt_start: tuple[int, int] = (0, 0)
-        self.lt_end: tuple[int, int] = (0, 0)
-        self.dir: tuple[float, float] = (0.0, 1.0)
+        i2c = board.I2C()
+        self.IMU = BNO055_I2C(i2c)
+        
+        self.yaw: float = 0.0
         
         self.m_pid = PID(0.1, 0, 0.05)
        
@@ -63,6 +70,25 @@ class Robot:
     def turnRight(self):
         self.set_left_speed(-self.max_speed)
         self.set_right_speed(self.max_speed)
+    
+    def turn(self, degrees: float, tol=1.0):
+        target: float = (self.yaw + degrees) % 360 # pyright: ignore[reportOptionalOperand]
+        self.stop()
+        time.sleep(TIMESTEP)
+        while abs(target - self.yaw) > tol:
+            self.update()
+            if degrees > 0:
+                self.turnRight()
+            else:
+                self.turnLeft()
+            time.sleep(TIMESTEP)
+        
+        self.stop()
+        time.sleep(TIMESTEP)
+    
+    def turnToTarget(self, degrees: float, tol=1.0):
+        angle: float = (degrees - self.yaw + 180.0) % 360.0 - 180.0 
+        self.turn(angle, tol)
             
     def stop(self):
         for i in range(4):
@@ -72,6 +98,8 @@ class Robot:
         self.ball_cam.release()
         self.line_cam.release()
     
+    def update(self):
+        self.yaw = self.IMU.gyro[2]  # type: ignore
         
         
         
