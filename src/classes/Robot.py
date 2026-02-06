@@ -3,9 +3,10 @@ from .Motor import Motor
 
 from simple_pid import PID
 from adafruit_bno055 import BNO055_I2C
-from constants import TIMESTEP
+from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED    
 
 import cv2, board, time
+import Jetson.GPIO as GPIO
 
 class Robot:
     _instance = None
@@ -21,12 +22,9 @@ class Robot:
 
         board_to_tegra = {k: list(GPIO.gpio_pin_data.get_data()[-1]['TEGRA_SOC'].keys())[i] for i, k in enumerate(GPIO.gpio_pin_data.get_data()[-1]['BOARD'])} # type: ignore
 
-
         self._initialized = True
         self.sm = SerialManager()
         self.motors = [Motor(i, self.sm) for i in range(4)]
-        self.base_speed = 50
-        self.max_speed = 100
         
         self.ball_cam = cv2.VideoCapture(2, cv2.CAP_V4L2)
         self.line_cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
@@ -39,14 +37,17 @@ class Robot:
         self.line_cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
         self.line_cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         self.line_cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        self.line_cam.set(cv2.CAP_PROP_BUFFERSIZE, 2)
         self.line_cam.set(cv2.CAP_PROP_FPS, 60)
         
+        self.prev_steer = 0.0
+        
         i2c = board.I2C()
-        self.IMU = BNO055_I2C(i2c)
+        # self.IMU = BNO055_I2C(i2c)
         
         self.yaw: float = 0.0
         
-        self.m_pid = PID(0.1, 0, 0.05)
+        self.m_pid = PID(M_KP, M_KI, M_KD)
        
     def set_left_speed(self, speed: int):
         self.motors[0].set_speed(speed)
@@ -60,16 +61,16 @@ class Robot:
     def set_motor_output(self, control: int):
         output = int(self.m_pid(control)) # type: ignore
         
-        self.set_left_speed(self.base_speed + output)
-        self.set_right_speed(self.base_speed - output)
+        self.set_left_speed(BASE_SPEED + output)
+        self.set_right_speed(BASE_SPEED - output)
             
     def turnLeft(self):
-        self.set_left_speed(self.max_speed)
-        self.set_right_speed(-self.max_speed)
+        self.set_left_speed(MAX_SPEED)
+        self.set_right_speed(-MAX_SPEED)
     
     def turnRight(self):
-        self.set_left_speed(-self.max_speed)
-        self.set_right_speed(self.max_speed)
+        self.set_left_speed(-MAX_SPEED)
+        self.set_right_speed(MAX_SPEED)
     
     def turn(self, degrees: float, tol=1.0):
         target: float = (self.yaw + degrees) % 360 # pyright: ignore[reportOptionalOperand]

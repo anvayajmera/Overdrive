@@ -8,7 +8,7 @@ if GUI:
 
 r = Robot()
 
-init();
+init()
 
 try:
     while True:
