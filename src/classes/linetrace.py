@@ -1,8 +1,7 @@
 import cv2
 import numpy as np
 import math
-from itertools import combinations
-from scipy.interpolate import UnivariateSpline
+from cv2 import ximgproc
 
 from classes.Robot import Robot
 from classes.constants import GUI, CROSSTRACK_GAIN, BASE_SPEED_PIXEL
@@ -85,45 +84,6 @@ def bezier_curve(control_points, num_points=200):
 
     return np.round(curve).astype(np.int32)
 
-# =========================
-# Ackermann Controller Overlay (fixed arrow along path tangent, flipped 180°)
-# =========================
-def draw_ackermann_overlay(frame, path_points, robot_pos=None, wheelbase=50.0):
-    h, w, _ = frame.shape
-    if robot_pos is None:
-        robot_pos = np.array([w // 2, h - 1], dtype=np.float32)  # bottom-center
-
-    # Draw all path points
-    for p in path_points:
-        cv2.circle(frame, tuple(p.astype(int)), 2, (0, 255, 0), -1)
-
-    # Nearest path point
-    dists = np.linalg.norm(path_points - robot_pos, axis=1)
-    nearest_idx = np.argmin(dists)
-    nearest_point = path_points[nearest_idx]
-
-    # Draw nearest point
-    cv2.circle(frame, tuple(nearest_point.astype(int)), 5, (0, 255, 255), -1)
-
-    # Compute local tangent at nearest point and flip 180 degrees
-    if nearest_idx < len(path_points) - 1:
-        tangent = path_points[nearest_idx + 1] - nearest_point
-    else:
-        tangent = nearest_point - path_points[nearest_idx - 1]
-
-    tangent = -tangent / (np.linalg.norm(tangent) + 1e-6)  # <-- FLIPPED
-
-    # Draw red arrow along path tangent
-    length = 50
-    end_point = nearest_point + tangent * length
-    cv2.arrowedLine(frame, tuple(nearest_point.astype(int)), tuple(end_point.astype(int)), (0, 0, 255), 2)
-
-    # Ackermann steering angle (optional, for info)
-    L = length
-    alpha = math.atan2(tangent[0], -tangent[1])
-    steer_angle = math.atan2(2 * wheelbase * math.sin(alpha), L)
-
-    return frame, alpha, nearest_point
 # =========================
 # Stanley Controller Overlay (USING BEZIER CURVE)
 # =========================

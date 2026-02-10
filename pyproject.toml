@@ -18,6 +18,7 @@ numpy = {version = "^2.2.6", markers = "sys_platform == 'darwin'"}
 traitlets = {version = "^5.14.0", markers = "sys_platform == 'darwin'"}
 ultralytics = {version = "8.3.181", markers = "sys_platform == 'darwin'"}
 jetcam = {git = "https://github.com/NVIDIA-AI-IOT/jetcam", branch="master", markers = "sys_platform == 'darwin'"}
+opencv-contrib-python = "^4.13.0.92"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
