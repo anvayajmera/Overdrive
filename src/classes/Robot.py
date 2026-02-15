@@ -3,7 +3,7 @@ from .Motor import Motor
 
 from simple_pid import PID
 from adafruit_bno055 import BNO055_I2C
-from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED
+from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS
 
 import cv2, board, time
 import Jetson.GPIO as GPIO
@@ -33,13 +33,13 @@ class Robot:
         self.ball_cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
         self.ball_cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         self.ball_cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-        self.ball_cam.set(cv2.CAP_PROP_FPS, 60)
+        self.ball_cam.set(cv2.CAP_PROP_FPS, FPS)
 
         self.line_cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
         self.line_cam.set(cv2.CAP_PROP_FRAME_WIDTH, 480)
         self.line_cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 270)
         self.line_cam.set(cv2.CAP_PROP_BUFFERSIZE, 2)
-        self.line_cam.set(cv2.CAP_PROP_FPS, 60)
+        self.line_cam.set(cv2.CAP_PROP_FPS, FPS)
 
         self.prev_steer = 0.0
 
