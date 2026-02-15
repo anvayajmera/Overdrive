@@ -94,38 +94,16 @@ def build_mst(points, max_dist=100):
 # =========================
 def extract_skeleton_points(skeleton, step=15):
     """
-    Optimized extraction of key points from the skeleton.
-    Uses sliding window scan and branch point detection.
+    Fast extraction of points from the skeleton using stride-based sampling.
     """
-    h, w = skeleton.shape
-    points = []
+    coords = np.column_stack(np.where(skeleton > 0))
+    if len(coords) == 0:
+        return []
 
-    # 1. Path points: Sample the skeleton at regular Y intervals
-    for y in range(0, h, step):
-        row = skeleton[y, :]
-        nz = np.nonzero(row)[0]
-        if len(nz) > 0:
-            points.append(np.array([int(np.mean(nz)), y]))
-
-    # 2. Branch points: Detect junctions using pixel neighborhood
-    # A pixel is a branch point if it has > 2 neighbors in a 3x3
-    # We use a simple convolution-like check
-    skeleton_binary = (skeleton > 0).astype(np.uint8)
-    kernel = np.array([[1, 1, 1], [1, 0, 1], [1, 1, 1]], dtype=np.uint8)
-    neighbor_count = cv2.filter2D(skeleton_binary, -1, kernel)
-
-    # Threshold for branch points (3 or more neighbors)
-    branch_mask = (neighbor_count > 2) & (skeleton_binary > 0)
-    branch_coords = np.argwhere(branch_mask)
-
-    if len(branch_coords) > 0:
-        for y, x in branch_coords:
-            p = np.array([x, y])
-            # Only add if not too close to existing sampled points
-            if not points or all(np.linalg.norm(p - q) > 20 for q in points):
-                points.append(p)
-
-    return points
+    # Fast sampling: use every N-th point from the skeleton coordinates
+    # This is O(N) and much faster than distance-based filtering in Python
+    sampled = coords[::step]
+    return [np.array([p[1], p[0]]) for p in sampled]
 
 
 # =========================
@@ -154,7 +132,6 @@ def draw_graph_on_frame(frame, graph):
 def init():
     if GUI:
         cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("Original", 960, 540)
 
 
 # =========================
@@ -164,7 +141,7 @@ def process_image(img):
     blur = cv2.blur(img, (3, 3))
     f = blur.astype(np.float32) + 1
     log_img = cv2.log(f)
-    log_img = cv2.normalize(log_img, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+    log_img = cv2.normalize(log_img, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)  # type: ignore
 
     # Faster thresholding
     b, g, r = cv2.split(log_img)
@@ -183,7 +160,13 @@ def process_image(img):
 
     largest = max(contours, key=cv2.contourArea)
     mask = np.zeros_like(closing)
-    cv2.drawContours(mask, [largest], -1, 255, cv2.FILLED)
+    cv2.drawContours(mask, [largest], -1, 255, cv2.FILLED)  # type: ignore
+
+    # Remove edge artifacts by blacking out a 15px border
+    # This prevents the skeleton from branching or flattening at the frame edges
+    h, w = mask.shape
+    cv2.rectangle(mask, (0, 0), (w - 1, h - 1), 0, 30)
+
     return cv2.bitwise_and(closing, mask)
 
 
@@ -202,7 +185,7 @@ def bezier_curve(control_points, num_points=100):
 
     for i in range(n + 1):
         coef = float(math.comb(n, i))
-        b = (coef * (1.0 - t) ** (n - i) * (t**i)).astype(np.float32)
+        b = (coef * (1.0 - t) ** (n - i) * (t**i)).astype(np.float32)  # type: ignore
         curve += b[:, None] * cp[i]
 
     return np.round(curve).astype(np.int32)
@@ -217,7 +200,7 @@ def draw_stanley_overlay(frame, path_points):
         return frame, 0, 0
 
     # Nearest point (fixed index for simplicity in this version)
-    idx = min(len(path_points) - 1, 80)
+    idx = min(len(path_points) - 1, 40)
     target = path_points[idx]
 
     # Draw path
@@ -226,22 +209,36 @@ def draw_stanley_overlay(frame, path_points):
 
     cv2.circle(frame, tuple(target.astype(int)), 6, (0, 255, 255), -1)
 
-    # Tangent calc
+    # Tangent calc: points from current point toward the next point in the sequence
     if idx < len(path_points) - 1:
         tangent = path_points[idx + 1] - target
     else:
+        # Use previous point if we're at the end
         tangent = target - path_points[idx - 1]
 
-    tangent = -tangent / (np.linalg.norm(tangent) + 1e-6)
+    tangent = tangent / (np.linalg.norm(tangent) + 1e-6)
+
     alpha = math.atan2(tangent[0], -tangent[1])
     offset = target[0] - (w // 2)
+
+    # Visualization of tangent line (Arrowhead)
+    arrow_len = 40
+    p2 = target + (tangent * arrow_len).astype(int)
+    cv2.arrowedLine(
+        frame,
+        tuple(target.astype(int)),
+        tuple(p2.astype(int)),
+        (255, 0, 255),
+        3,
+        tipLength=0.3,
+    )
 
     # Visualization
     cv2.line(frame, (w // 2, target[1]), tuple(target), (0, 0, 255), 2)
     cv2.putText(
         frame,
         f"Off: {offset}",
-        (w // 2, target[1] - 10),
+        (w // 2 - 40, target[1] - 10),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,
         (0, 0, 255),
@@ -262,7 +259,8 @@ def linetrace():
         return
 
     frame = cv2.flip(frame, -1)
-    frame = cv2.resize(frame, (960, 540))
+
+    og_frame = frame.copy()
 
     binary_path = process_image(frame)
     thinned = cv2.ximgproc.thinning(binary_path)
@@ -274,8 +272,39 @@ def linetrace():
     path_points = []
     if len(key_points) >= 2:
         nodes = build_mst(key_points)
-        # Sort bottom-to-top for tracing
-        path_points = sorted([n.point for n in nodes], key=lambda p: p[1], reverse=True)
+
+        # Path Traversal: Start from bottom-center and traverse the main spine.
+        # This is more robust than Y-sorting when branches or artifacts exist.
+        start_idx = 0
+        min_dist = float("inf")
+        for i, n in enumerate(nodes):
+            d = np.linalg.norm(n.point - np.array([480, 540]))
+            if d < min_dist:
+                min_dist = d
+                start_idx = i
+
+        # Find the longest path in the MST starting from the robot's position.
+        # This identifies the "main spine" and ignores small side branches or artifacts.
+        def get_longest_branch(curr_idx, visited):
+            visited.add(curr_idx)
+            best_path = [nodes[curr_idx].point]
+
+            for neighbor in nodes[curr_idx].connected:
+                if neighbor not in visited:
+                    # Explore this branch
+                    branch_path = get_longest_branch(neighbor, visited.copy())
+                    # Keep the branch that has the most points (longest skeleton distance)
+                    if len(branch_path) + 1 > len(best_path):
+                        best_path = [nodes[curr_idx].point] + branch_path
+            return best_path
+
+        path_points = get_longest_branch(start_idx, set())
+
+        # Ensure path ordering: Always start from bottom (High Y) to top (Low Y)
+        # start_idx is already nearest the robot, but we double check the endpoints
+        if len(path_points) > 1:
+            if path_points[0][1] < path_points[-1][1]:
+                path_points = path_points[::-1]
 
     if len(path_points) > 5:
         bez = bezier_curve(path_points)
@@ -308,6 +337,7 @@ def linetrace():
 
     if GUI:
         if nodes:
-            frame = draw_graph_on_frame(frame, nodes)
+            node_frame = draw_graph_on_frame(og_frame, nodes)
+            cv2.imshow("Nodes", node_frame)
         cv2.imshow("Original", frame)
         cv2.imshow("Thinning", thinned)
