@@ -12,7 +12,7 @@ class SerialManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, port="/dev/ttyACM0", baud=115200):
+    def __init__(self, port="/dev/ttyACM0", baud=921600):
         if getattr(self, "_initialized", False):
             return
 
@@ -40,4 +40,3 @@ class SerialManager:
         packet[4] = arg3
 
         self.ser.write(packet)
-        self.ser.reset_input_buffer()

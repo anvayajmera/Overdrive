@@ -23,7 +23,7 @@ Robot::Robot()
 
 void Robot::setup()
 {
-    Serial.begin(115200);
+    Serial.begin(921600);
 
     for (int i = 0; i < 4; i++)
         motors[i].setup();
@@ -89,15 +89,9 @@ void Robot::handlePacket()
         {
             int speed = (sign > 1) ? -(int)val : (int)val;
             motors[motorIdx].setSpeed(speed);
-            Serial.println("OK");
-        }
-        else
-        {
-            Serial.println("ERR: MOTOR ID");
         }
         break;
     default:
-        Serial.println("ERR: UNKNOWN CMD");
         break;
     }
 }
