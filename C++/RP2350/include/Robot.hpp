@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Servo.h>
+
 #include "Motor.hpp"
 
 class Robot
@@ -17,6 +19,8 @@ private:
 
     // Left front back then right front back
     Motor motors[4];
+    Servo arm;
+    Servo claw[2];
 
     uint8_t serialBuff[5];
     uint8_t serialBuffInd;

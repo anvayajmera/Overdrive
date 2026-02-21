@@ -132,6 +132,8 @@ def draw_graph_on_frame(frame, graph):
 def init():
     if GUI:
         cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Nodes", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Thinning", cv2.WINDOW_NORMAL)
 
 
 # =========================

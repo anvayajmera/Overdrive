@@ -30,6 +30,16 @@ void Robot::setup()
 
     motors[0].reverse();
     motors[1].reverse();
+
+    arm.attach(ARM_SERVO, 500, 2500);
+    claw[0].attach(CLAW_TOUCH, 500, 2500);
+    claw[1].attach(CLAW, 500, 2500);
+
+    arm.write(90);
+    for (int i = 0; i < 2; i++)
+    {
+        claw[i].write(90);
+    }
 }
 
 void Robot::update()

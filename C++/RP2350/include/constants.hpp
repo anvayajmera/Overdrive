@@ -7,3 +7,7 @@
 #define START_BYTE 0xAA
 #define SET_MOTOR_SPEED 0x01
 #define COMMAND_SIZE 5
+
+#define ARM_SERVO D0
+#define CLAW_TOUCH D5
+#define CLAW D6

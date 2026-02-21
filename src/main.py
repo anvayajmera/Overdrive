@@ -12,20 +12,22 @@ init()
 
 next_t = time.perf_counter()
 
+print("TIMESTEP: ", TIMESTEP)
+
 try:
     while True:
-        now = time.perf_counter()
-        if now < next_t:
-            time.sleep(next_t - now)
-        next_t += TIMESTEP
+        # now = time.perf_counter()
+        # if now < next_t:
+        #     time.sleep(next_t - now)
+        # next_t += TIMESTEP
 
         linetrace()
-        
+
         if GUI:
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(1) & 0xFF == ord("q"):
                 break
 except KeyboardInterrupt:
     print("Stopping bc of ctrl + C.")
-    r.stop()    
+    r.stop()
 
 r.cleanup()
