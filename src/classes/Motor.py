@@ -1,7 +1,8 @@
 import Jetson.GPIO as GPIO
 
-from .constants import SET_MOTOR_SPEED, MOTORS
+from .constants import MOTORS, SET_MOTOR_SPEED
 from .SerialManager import SerialManager
+
 
 class Motor:
     # in1 is PWM, in2 is DIR
@@ -14,10 +15,12 @@ class Motor:
     def set_speed(self, speed: int):
         if not MOTORS:
             return
+
+        speed = max(-100, min(speed, 100))
         if speed == self.speed:
-            return  
-        self.speed = max(0, min(abs(speed), 100))
+            return
+        self.speed = speed
 
         sign = 2 if speed < 0 else 1
 
-        return self.sm.send(SET_MOTOR_SPEED, self.id, self.speed, sign)
+        return self.sm.send(SET_MOTOR_SPEED, self.id, abs(speed), sign)

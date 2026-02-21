@@ -40,7 +40,4 @@ class SerialManager:
         packet[4] = arg3
 
         self.ser.write(packet)
-        self.ser.flush()
-
-        line = self.ser.readline()
-        return line.decode(errors="replace").strip()
+        self.ser.reset_input_buffer()
