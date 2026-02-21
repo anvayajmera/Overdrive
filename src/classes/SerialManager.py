@@ -1,6 +1,8 @@
+import serial
+
 from .constants import START_BYTE
 from .globals import is_byte
-import serial
+
 
 class SerialManager:
     _instance = None
@@ -11,16 +13,16 @@ class SerialManager:
         return cls._instance
 
     def __init__(self, port="/dev/ttyACM0", baud=115200):
-        if getattr(self, '_initialized', False):
+        if getattr(self, "_initialized", False):
             return
 
         self.port = port
         self.baud = baud
-        self.ser = serial.Serial(port, baud, timeout=0.2, write_timeout=0.1)
+        self.ser = serial.Serial(port, baud, timeout=0.2, write_timeout=1.0)
 
         self._initialized = True
 
-    def send(self, command: int, arg1: int, arg2: int, arg3 = 1):
+    def send(self, command: int, arg1: int, arg2: int, arg3=1):
         if not is_byte(command):
             raise TypeError(f"{command} is not a byte")
         if not is_byte(arg1):
@@ -29,7 +31,7 @@ class SerialManager:
             raise TypeError(f"{arg2} is not a byte")
         if not is_byte(arg3):
             raise TypeError(f"{arg3} is not a byte")
-        
+
         packet = bytearray(5)
         packet[0] = START_BYTE
         packet[1] = command
@@ -39,5 +41,6 @@ class SerialManager:
 
         self.ser.write(packet)
         self.ser.flush()
-        
-        return self.ser.readline().decode().strip()
+
+        line = self.ser.readline()
+        return line.decode(errors="replace").strip()
