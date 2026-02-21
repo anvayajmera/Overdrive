@@ -53,22 +53,22 @@ void Robot::parseInput()
     {
         uint8_t b = Serial.read();
 
+        if (b == START_BYTE)
+        {
+            serialBuffInd = 0;
+        }
+
         if (serialBuffInd != 0 || b == START_BYTE)
         {
-            // Write into buffer
-            serialBuff[serialBuffInd++] = b;
+            if (serialBuffInd < COMMAND_SIZE)
+            {
+                serialBuff[serialBuffInd++] = b;
+            }
+
             if (serialBuffInd == COMMAND_SIZE)
             {
                 yield(); // Vital to make code work for some reason
-
-                // Serial.println(serialBuff[0]);
-                // for (int i = 1; i < COMMAND_SIZE-1; i++) {
-                //     crc = crc ^ serialBuff[i];
-                //     Serial.println(serialBuff[i]);
-                // }
-
                 handlePacket();
-
                 serialBuffInd = 0;
             }
         }
@@ -77,13 +77,27 @@ void Robot::parseInput()
 
 void Robot::handlePacket()
 {
-    switch (serialBuff[1])
+    uint8_t cmd = serialBuff[1];
+    uint8_t motorIdx = serialBuff[2];
+    uint8_t val = serialBuff[3];
+    uint8_t sign = serialBuff[4];
+
+    switch (cmd)
     {
     case SET_MOTOR_SPEED:
-        int speed = serialBuff[4] > 1 ? (int)serialBuff[3] * -1 : serialBuff[3];
-        Serial.printf("OK");
-
-        motors[serialBuff[2]].setSpeed(speed);
+        if (motorIdx < 4)
+        {
+            int speed = (sign > 1) ? -(int)val : (int)val;
+            motors[motorIdx].setSpeed(speed);
+            Serial.println("OK");
+        }
+        else
+        {
+            Serial.println("ERR: MOTOR ID");
+        }
+        break;
+    default:
+        Serial.println("ERR: UNKNOWN CMD");
         break;
     }
 }
