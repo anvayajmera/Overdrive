@@ -24,4 +24,5 @@ private:
 
     uint8_t serialBuff[5];
     uint8_t serialBuffInd;
+    unsigned long lastPacketTime;
 };

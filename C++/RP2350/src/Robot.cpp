@@ -19,6 +19,7 @@ Robot::Robot()
     motors[3] = Motor(MOTOR_RIGHT_REAR);
 
     serialBuffInd = 0;
+    lastPacketTime = millis();
 }
 
 void Robot::setup()
@@ -45,6 +46,15 @@ void Robot::setup()
 void Robot::update()
 {
     parseInput();
+
+    // Safety timeout: Stop motors if no command received for 500ms
+    if (millis() - lastPacketTime > 500)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            motors[i].setSpeed(0);
+        }
+    }
 }
 
 void Robot::parseInput()
@@ -67,6 +77,7 @@ void Robot::parseInput()
 
             if (serialBuffInd == COMMAND_SIZE)
             {
+                lastPacketTime = millis();
                 yield(); // Vital to make code work for some reason
                 handlePacket();
                 serialBuffInd = 0;
