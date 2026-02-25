@@ -48,7 +48,7 @@ class Robot:
 
         self.yaw: float = 0.0
 
-        self.m_pid = PID(M_KP, M_KI, M_KD)
+        self.m_pid = PID(M_KP, M_KI, M_KD, setpoint=0.0)
 
     def set_left_speed(self, speed: int):
         self.motors[0].set_speed(speed)
@@ -61,9 +61,15 @@ class Robot:
     # Control represents some value to be passed into pid
     def set_motor_output(self, control: int):
         output = int(self.m_pid(control))  # type: ignore
+        # if abs(control) > 250:
+        # print(f"Control: {control} -> Output: {output}")
 
         self.set_left_speed(BASE_SPEED + output)
         self.set_right_speed(BASE_SPEED - output)
+
+    def forward(self):
+        self.set_left_speed(MAX_SPEED)
+        self.set_right_speed(MAX_SPEED)
 
     def turnLeft(self):
         self.set_left_speed(MAX_SPEED)

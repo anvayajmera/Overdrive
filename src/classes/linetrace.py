@@ -1,5 +1,4 @@
-import math
-from itertools import combinations
+import math, time
 
 import cv2
 import numpy as np
@@ -168,10 +167,10 @@ def process_image(img):
     mask = np.zeros_like(closing)
     cv2.drawContours(mask, [largest], -1, 255, cv2.FILLED)  # type: ignore
 
-    # Remove edge artifacts by blacking out a 15px border
+    # Remove edge artifacts by blacking out a small border
     # This prevents the skeleton from branching or flattening at the frame edges
     h, w = mask.shape
-    cv2.rectangle(mask, (0, 0), (w - 1, h - 1), 0, 30)
+    cv2.rectangle(mask, (0, 0), (w - 1, h - 1), 0, 5)
 
     return cv2.bitwise_and(closing, mask)
 
@@ -206,7 +205,7 @@ def draw_stanley_overlay(frame, path_points):
         return frame, 0, 0
 
     # Nearest point (fixed index for simplicity in this version)
-    idx = min(len(path_points) - 1, 50)
+    idx = min(len(path_points) - 1, 45)
     target = path_points[idx]
 
     # Draw path
@@ -267,9 +266,10 @@ def linetrace():
     frame = cv2.flip(frame, -1)
 
     og_frame = frame.copy()
+    h, w, _ = frame.shape
 
     binary_path = process_image(frame)
-    thinned = cv2.ximgproc.thinning(binary_path)
+    thinned = ximgproc.thinning(binary_path)
 
     # Fast point extraction from skeleton
     key_points = extract_skeleton_points(thinned)
@@ -284,7 +284,7 @@ def linetrace():
         start_idx = 0
         min_dist = float("inf")
         for i, n in enumerate(nodes):
-            d = np.linalg.norm(n.point - np.array([480, 540]))
+            d = np.linalg.norm(n.point - np.array([w // 2, h]))
             if d < min_dist:
                 min_dist = d
                 start_idx = i
@@ -319,6 +319,16 @@ def linetrace():
         output = math.degrees(
             theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
         )
+
+        # if abs(math.degrees(theta)) > 55:
+        #     if theta < 0:
+        #         r.stop()
+        #         time.sleep(1)
+        #         r.turnLeft()
+        #         time.sleep(0.15)
+        #         r.stop()
+        #         time.sleep(1)
+
         r.set_motor_output(round(output))
 
         if GUI:
