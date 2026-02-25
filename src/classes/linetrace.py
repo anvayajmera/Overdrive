@@ -132,8 +132,12 @@ def draw_graph_on_frame(frame, graph):
 def init():
     if GUI:
         cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-        cv2.namedWindow("Nodes", cv2.WINDOW_NORMAL)
+        # cv2.namedWindow("Nodes", cv2.WINDOW_NORMAL)
         cv2.namedWindow("Thinning", cv2.WINDOW_NORMAL)
+
+        cv2.resizeWindow("Original", 480, 270)
+        # cv2.resizeWindow("Nodes", 480, 270)
+        cv2.resizeWindow("Thinning", 480, 270)
 
 
 # =========================
@@ -202,7 +206,7 @@ def draw_stanley_overlay(frame, path_points):
         return frame, 0, 0
 
     # Nearest point (fixed index for simplicity in this version)
-    idx = min(len(path_points) - 1, 40)
+    idx = min(len(path_points) - 1, 50)
     target = path_points[idx]
 
     # Draw path
@@ -340,6 +344,6 @@ def linetrace():
     if GUI:
         if nodes:
             node_frame = draw_graph_on_frame(og_frame, nodes)
-            cv2.imshow("Nodes", node_frame)
+            # cv2.imshow("Nodes", node_frame)
         cv2.imshow("Original", frame)
         cv2.imshow("Thinning", thinned)
