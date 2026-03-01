@@ -3,9 +3,9 @@ from .Motor import Motor
 
 from simple_pid import PID
 from adafruit_bno055 import BNO055_I2C
-from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS
+from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS, MOTORS
 
-import cv2, board, time
+import cv2, board, time, threading
 import Jetson.GPIO as GPIO
 
 
@@ -26,6 +26,7 @@ class Robot:
         self._initialized = True
         self.sm = SerialManager()
         self.motors = [Motor(i, self.sm) for i in range(4)]
+        self.motors_active = MOTORS
 
         self.ball_cam = cv2.VideoCapture(2, cv2.CAP_V4L2)
         self.line_cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
@@ -51,10 +52,14 @@ class Robot:
         self.m_pid = PID(M_KP, M_KI, M_KD, setpoint=0.0)
 
     def set_left_speed(self, speed: int):
+        if not self.motors_active:
+            return
         self.motors[0].set_speed(speed)
         self.motors[1].set_speed(speed)
 
     def set_right_speed(self, speed: int):
+        if not self.motors_active:
+            return
         self.motors[2].set_speed(speed)
         self.motors[3].set_speed(speed)
 
@@ -101,8 +106,8 @@ class Robot:
         self.turn(angle, tol)
 
     def stop(self):
-        for i in range(4):
-            self.motors[i].set_speed(0)
+        self.set_left_speed(0)
+        self.set_right_speed(0)
 
     def cleanup(self):
         self.ball_cam.release()
@@ -110,3 +115,16 @@ class Robot:
 
     def update(self):
         self.yaw = self.IMU.gyro[2]  # type: ignore
+
+    def pause_motors(self, seconds: float):
+        if not self.motors_active:
+            return
+
+        self.stop()
+
+        self.motors_active = False
+
+        def re_enable():
+            self.motors_active = True and MOTORS
+
+        threading.Timer(seconds, re_enable).start()

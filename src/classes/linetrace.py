@@ -205,7 +205,7 @@ def draw_stanley_overlay(frame, path_points):
         return frame, 0, 0
 
     # Nearest point (fixed index for simplicity in this version)
-    idx = min(len(path_points) - 1, 45)
+    idx = min(len(path_points) - 1, 50)
     target = path_points[idx]
 
     # Draw path
@@ -253,31 +253,10 @@ def draw_stanley_overlay(frame, path_points):
     return frame, alpha, offset
 
 
-# =========================
-# Main Linetrace Logic
-# =========================
-def linetrace():
-    r = Robot()
-
-    ret, frame = r.line_cam.read()
-    if not ret:
-        return
-
-    frame = cv2.flip(frame, -1)
-
-    og_frame = frame.copy()
-    h, w, _ = frame.shape
-
-    binary_path = process_image(frame)
-    thinned = ximgproc.thinning(binary_path)
-
+def extract_path(nodes: list[Node], w: int, h: int):
     # Fast point extraction from skeleton
-    key_points = extract_skeleton_points(thinned)
-
-    nodes = []
     path_points = []
-    if len(key_points) >= 2:
-        nodes = build_mst(key_points)
+    if len(nodes) >= 2:
 
         # Path Traversal: Start from bottom-center and traverse the main spine.
         # This is more robust than Y-sorting when branches or artifacts exist.
@@ -312,6 +291,31 @@ def linetrace():
             if path_points[0][1] < path_points[-1][1]:
                 path_points = path_points[::-1]
 
+    return path_points
+
+
+# =========================
+# Main Linetrace Logic
+# =========================
+def linetrace():
+    r = Robot()
+
+    ret, frame = r.line_cam.read()
+    if not ret:
+        return
+
+    frame = cv2.flip(frame, -1)
+
+    og_frame = frame.copy()
+    h, w, _ = frame.shape
+
+    binary_path = process_image(frame)
+    thinned = ximgproc.thinning(binary_path)
+
+    key_points = extract_skeleton_points(thinned)
+    nodes = build_mst(key_points)
+    path_points = extract_path(nodes, w, h)
+
     if len(path_points) > 5:
         bez = bezier_curve(path_points)
         frame, theta, offset_error = draw_stanley_overlay(frame, bez)
@@ -320,14 +324,8 @@ def linetrace():
             theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
         )
 
-        # if abs(math.degrees(theta)) > 55:
-        #     if theta < 0:
-        #         r.stop()
-        #         time.sleep(1)
-        #         r.turnLeft()
-        #         time.sleep(0.15)
-        #         r.stop()
-        #         time.sleep(1)
+        if abs(math.degrees(theta)) > 65:
+            r.pause_motors(4)
 
         r.set_motor_output(round(output))
 

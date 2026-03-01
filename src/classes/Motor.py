@@ -1,6 +1,6 @@
 import Jetson.GPIO as GPIO
 
-from .constants import MOTORS, SET_MOTOR_SPEED
+from .constants import SET_MOTOR_SPEED
 from .SerialManager import SerialManager
 
 
@@ -13,9 +13,6 @@ class Motor:
         self.speed = -2000
 
     def set_speed(self, speed: int):
-        if not MOTORS:
-            return
-
         speed = max(-100, min(speed, 100))
         if speed == self.speed:
             return
