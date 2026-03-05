@@ -2,8 +2,8 @@ import threading
 
 import serial
 
-from .constants import START_BYTE
-from .globals import is_byte
+from constants import START_BYTE
+from globals import is_byte
 
 
 class SerialManager:

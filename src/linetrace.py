@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from cv2 import ximgproc
 
-from classes.constants import BASE_SPEED_PIXEL, CROSSTRACK_GAIN, GUI
+from constants import BASE_SPEED_PIXEL, CROSSTRACK_GAIN, GUI
 from classes.Robot import Robot
 
 

@@ -3,7 +3,7 @@ from .Motor import Motor
 
 from simple_pid import PID
 from adafruit_bno055 import BNO055_I2C
-from .constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS, MOTORS
+from constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS, MOTORS
 
 import cv2, board, time, threading
 import Jetson.GPIO as GPIO

@@ -1,6 +1,6 @@
 import Jetson.GPIO as GPIO
 
-from .constants import SET_MOTOR_SPEED
+from constants import SET_MOTOR_SPEED
 from .SerialManager import SerialManager
 
 

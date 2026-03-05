@@ -1,7 +1,7 @@
 import cv2, time, os
 from classes.Robot import Robot
-from classes.linetrace import linetrace, init
-from classes.constants import GUI, TIMESTEP, X11
+from linetrace import linetrace, init
+from constants import GUI, TIMESTEP, X11
 
 if GUI and not X11:
     os.environ.setdefault("DISPLAY", ":0")
