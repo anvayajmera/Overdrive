@@ -10,18 +10,24 @@ r = Robot()
 
 init()
 
+
 next_t = time.perf_counter()
 
-print("TIMESTEP: ", TIMESTEP)
+# print("TIMESTEP: ", TIMESTEP)
 
 try:
+    # for i in range(100):
+    #     r.backward()
+    #     time.sleep(0.2)
     while True:
         now = time.perf_counter()
         if now < next_t:
             time.sleep(next_t - now)
         next_t += TIMESTEP
 
-        linetrace()
+        # r.turnLeft()
+
+        # linetrace()
 
         if GUI:
             if cv2.waitKey(1) & 0xFF == ord("q"):

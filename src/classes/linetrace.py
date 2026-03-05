@@ -324,8 +324,16 @@ def linetrace():
             theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
         )
 
-        if abs(math.degrees(theta)) > 65:
-            r.pause_motors(4)
+        # Experimental turning code.
+        # if abs(math.degrees(theta)) > 75:
+        #     r.stop()
+        #     time.sleep(0.5)
+        #     if theta > 0:
+        #         r.turnRight()
+        #     else:
+        #         r.turnLeft()
+
+        #     time.sleep(0.3)
 
         r.set_motor_output(round(output))
 

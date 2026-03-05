@@ -76,6 +76,10 @@ class Robot:
         self.set_left_speed(MAX_SPEED)
         self.set_right_speed(MAX_SPEED)
 
+    def backward(self):
+        self.set_left_speed(-MAX_SPEED)
+        self.set_right_speed(-MAX_SPEED)
+
     def turnLeft(self):
         self.set_left_speed(MAX_SPEED)
         self.set_right_speed(-MAX_SPEED)
@@ -125,6 +129,6 @@ class Robot:
         self.motors_active = False
 
         def re_enable():
-            self.motors_active = True and MOTORS
+            self.motors_active = MOTORS
 
         threading.Timer(seconds, re_enable).start()

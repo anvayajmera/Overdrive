@@ -36,7 +36,7 @@ void Robot::setup()
     claw[0].attach(CLAW_TOUCH, 500, 2500);
     claw[1].attach(CLAW, 500, 2500);
 
-    arm.write(90);
+    arm.write(120);
     for (int i = 0; i < 2; i++)
     {
         claw[i].write(90);
@@ -46,15 +46,6 @@ void Robot::setup()
 void Robot::update()
 {
     parseInput();
-
-    // Safety timeout: Stop motors if no command received for 500ms
-    if (millis() - lastPacketTime > 500)
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            motors[i].setSpeed(0);
-        }
-    }
 }
 
 void Robot::parseInput()
