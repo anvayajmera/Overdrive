@@ -3,10 +3,14 @@ from .Motor import Motor
 
 from simple_pid import PID
 from adafruit_bno055 import BNO055_I2C
+from adafruit_vl53l4cd import VL53L4CD
+from adafruit_tca9548a import TCA9548A
+
 from constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS, MOTORS
 
 import cv2, board, time, threading
 import Jetson.GPIO as GPIO
+from typing import List
 
 
 class Robot:
@@ -45,11 +49,28 @@ class Robot:
         self.prev_steer = 0.0
 
         i2c = board.I2C()
+        
+        self.mux = TCA9548A(i2c)
         # self.IMU = BNO055_I2C(i2c)
 
         self.yaw: float = 0.0
 
         self.m_pid = PID(M_KP, M_KI, M_KD, setpoint=0.0)
+        
+        # Facing the robot, 0 is Left and 3 is right
+        self.distance_ids = [0, 3, 7]
+        self.front_ids = [0, 3]
+        
+        self.distance_sensors: List[VL53L4CD] = []
+        
+        self.front_distances: List[float] = []
+        for ch in self.distance_ids:
+            vl53 = VL53L4CD(self.mux[ch])
+            vl53.timing_budget = 200
+            vl53.inter_measurement = 0
+            vl53.start_ranging()
+            self.distance_sensors.append(vl53)
+
 
     def set_left_speed(self, speed: int):
         if not self.motors_active:
@@ -119,6 +140,13 @@ class Robot:
 
     def update(self):
         self.yaw = self.IMU.gyro[2]  # type: ignore
+        
+        for idx, sensor in enumerate(self.distance_sensors):
+            while not sensor.data_ready:
+                pass
+            sensor.clear_interrupt()
+            if idx in self.front_ids:
+                self.front_distances[self.front_ids.index(idx)] = sensor.distance
 
     def pause_motors(self, seconds: float):
         if not self.motors_active:
