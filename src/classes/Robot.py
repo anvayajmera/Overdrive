@@ -11,7 +11,8 @@ from constants import TIMESTEP, M_KD, M_KI, M_KP, BASE_SPEED, MAX_SPEED, FPS, MO
 import cv2, board, time, threading
 import Jetson.GPIO as GPIO
 from typing import List
-
+import numpy as np
+from globals import process_image
 
 class Robot:
     _instance = None
@@ -58,12 +59,15 @@ class Robot:
         self.m_pid = PID(M_KP, M_KI, M_KD, setpoint=0.0)
         
         # Facing the robot, 0 is Left and 3 is right
-        self.distance_ids = [0, 3, 7]
+        self.distance_ids = [0, 3]
         self.front_ids = [0, 3]
         
         self.distance_sensors: List[VL53L4CD] = []
         
-        self.front_distances: List[float] = []
+        self.frame: np.ndarray = []
+        self.binary_frame: np.ndarray = []
+
+        self.front_distances: List[float] = [1000000] * len(self.front_ids)
         for ch in self.distance_ids:
             vl53 = VL53L4CD(self.mux[ch])
             vl53.timing_budget = 200
@@ -139,8 +143,15 @@ class Robot:
         self.line_cam.release()
 
     def update(self):
-        self.yaw = self.IMU.gyro[2]  # type: ignore
-        
+        # self.yaw = self.IMU.gyro[2]  # type: ignore
+
+        ret, frame = self.line_cam.read()
+        if not ret:
+            return
+
+        self.frame = cv2.flip(frame, -1)
+        self.binary_frame = process_image(self.frame)
+
         for idx, sensor in enumerate(self.distance_sensors):
             while not sensor.data_ready:
                 pass

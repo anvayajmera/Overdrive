@@ -13,7 +13,6 @@ from .linetrace_helpers import (
     draw_stanley_overlay,
     extract_path,
     extract_skeleton_points,
-    process_image,
 )
 
 
@@ -32,18 +31,14 @@ def init():
 # Main Linetrace Logic
 # =========================
 def linetrace():
+    
     r = Robot()
 
-    ret, frame = r.line_cam.read()
-    if not ret:
-        return
+    frame = r.frame.copy()
+    og_frame = r.frame.copy()
+    h, w, _ = r.frame.shape
 
-    frame = cv2.flip(frame, -1)
-
-    og_frame = frame.copy()
-    h, w, _ = frame.shape
-
-    binary_path = process_image(frame)
+    binary_path = r.binary_frame
     thinned = ximgproc.thinning(binary_path)
 
     key_points = extract_skeleton_points(thinned)

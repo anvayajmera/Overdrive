@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
 from typing_extensions import Sequence
+from classes.Robot import Robot
 
-from src.constants import GREEN_MAX, GREEN_MIN, GREEN_SQUARE_MIN_AREA, GUI, LINE_CAM_HEIGHT, LINE_CAM_WIDTH, GREEN_SQUARE_ROI
+from constants import GREEN_MAX, GREEN_MIN, GREEN_SQUARE_MIN_AREA, GUI, LINE_CAM_HEIGHT, LINE_CAM_WIDTH, GREEN_SQUARE_ROI
 
 
 def find_green_square(frame: np.ndarray) -> Sequence[np.ndarray]:
@@ -89,27 +90,45 @@ def determine_turn_direction(black_borders):
 
     return turn_left, turn_right, left_low, right_low
 
-def green_square(frame: np.ndarray, black_frame: np.ndarray, gui_frame: np.ndarray) -> str:
-    contours_grn = find_green_square(frame)
+def green_square() -> str:
+    r = Robot()
+    contours_grn = find_green_square(r.frame)
     
     black_borders = []
+
+    gui_frame = r.frame.copy()
     
     for contour in contours_grn:
-        black_around_sign = check_black(contour, black_frame, gui_frame)
+        black_around_sign = check_black(contour, r.binary_frame, gui_frame)
         if black_around_sign[5] < LINE_CAM_HEIGHT * GREEN_SQUARE_ROI:
             continue
         black_borders.append(black_around_sign)
     
     turn_left, turn_right, left_bottom, right_bottom = determine_turn_direction(black_borders)
     
+    res = "straight"
+
+
     if turn_left and not turn_right and not left_bottom:
-        return "left"
+        res = "left"
     elif turn_right and not turn_left and not right_bottom:
-        return "right"
+        res = "right"
     elif turn_left and turn_right and not (left_bottom and right_bottom):
-        return "turn_around"
-    else:
-        return "straight"
+        res = "turn_around"
+    
+    if GUI:
+        cv2.putText(
+                gui_frame,
+                res,
+                (20, 80),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+        cv2.imshow("Green Square", gui_frame)
+    
+    return res
     
     
     
