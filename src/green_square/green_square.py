@@ -113,21 +113,31 @@ def determine_turn_direction(black_borders):
     left_low = False
     right_low = False
 
+    average_y = 0
+
     for i in black_borders:
         if np.sum(i[:4]) == 2:
             if i[1] == 1 and i[2] == 1:
+                average_y += (i[4] + i[5]) // 2
                 turn_right = True
                 if i[4] > LINE_CAM_HEIGHT * 0.95:
                     right_low = True
+                    average_y -= (i[4] + i[5]) // 2
+
             elif i[1] == 1 and i[3] == 1:
+                average_y += (i[4] + i[5]) // 2
                 turn_left = True
                 if i[4] > LINE_CAM_HEIGHT * 0.95:
                     left_low = True
+                    average_y -= (i[4] + i[5]) // 2
 
-    return turn_left, turn_right, left_low, right_low
+    if len(black_borders) > 0:
+        average_y //= len(black_borders)
+
+    return turn_left, turn_right, left_low, right_low, average_y
 
 
-def green_square() -> str:
+def green_square() -> tuple[str, int]:
     r = Robot()
     contours_grn = find_green_square(r.frame)
 
@@ -141,8 +151,8 @@ def green_square() -> str:
             continue
         black_borders.append(black_around_sign)
 
-    turn_left, turn_right, left_bottom, right_bottom = determine_turn_direction(
-        black_borders
+    turn_left, turn_right, left_bottom, right_bottom, average_y = (
+        determine_turn_direction(black_borders)
     )
 
     res = "straight"
@@ -166,4 +176,4 @@ def green_square() -> str:
         )
         cv2.imshow("Green Square", gui_frame)
 
-    return res
+    return res, average_y - (LINE_CAM_HEIGHT // 2 - 40)
