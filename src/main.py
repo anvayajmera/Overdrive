@@ -7,6 +7,7 @@ from classes.Robot import Robot
 from constants import GUI, TIMESTEP, X11
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
+from obstacle.obstacle import obstacle
 
 if GUI and not X11:
     os.environ.setdefault("DISPLAY", ":0")
@@ -34,9 +35,11 @@ try:
 
         # r.turnLeft()
 
-        linetrace()
+        # linetrace()
 
         # green_square()
+
+        obstacle()
 
         if GUI:
             if cv2.waitKey(1) & 0xFF == ord("r"):

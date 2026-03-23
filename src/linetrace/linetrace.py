@@ -5,7 +5,7 @@ import cv2
 from cv2 import ximgproc
 
 from classes.Robot import Robot
-from constants import BASE_SPEED_PIXEL, CROSSTRACK_GAIN, GUI
+from constants import BASE_SPEED_PIXEL, CROSSTRACK_GAIN, GUI, TURN_THRESH
 
 from .linetrace_helpers import (
     bezier_curve,
@@ -77,7 +77,7 @@ def linetrace():
             )
 
         # Experimental turning code.
-        if abs(math.degrees(theta)) > 85:
+        if abs(math.degrees(theta)) > TURN_THRESH:
             print("Linetrace turn angle: ", math.degrees(theta))
             r.stop()
             r.update()

@@ -42,8 +42,8 @@ class Robot:
             return
 
         board_to_tegra = {
-            k: list(GPIO.gpio_pin_data.get_data()[-1]["TEGRA_SOC"].keys())[i]
-            for i, k in enumerate(GPIO.gpio_pin_data.get_data()[-1]["BOARD"])
+            k: list(GPIO.gpio_pin_data.get_data()[-1]["TEGRA_SOC"].keys())[i]  # type:ignore
+            for i, k in enumerate(GPIO.gpio_pin_data.get_data()[-1]["BOARD"])  # type:ignore
         }  # type: ignore
 
         self._initialized = True
@@ -92,17 +92,20 @@ class Robot:
 
         self.m_pid = PID(M_KP, M_KI, M_KD, setpoint=0.0)
 
-        # Facing the robot, 0 is Left and 3 is right
-        self.distance_ids = [0, 3]
+        # Facing the robot, 0 is Left front and 3 is right front, 7 is left, and 4 is right
+        self.distance_ids = [0, 3, 4, 7]
         self.front_ids = [0, 3]
+        self.side_ids = [7, 4]
 
         self.distance_sensors: List[VL53L4CD] = []
 
         self.frame: np.ndarray = []  # type: ignore
         self.gui_frame: np.ndarray = []  # type: ignore
         self.binary_frame: np.ndarray = []  # type: ignore
+        self.line_size: float = 0.0
 
         self.front_distances: List[float] = [1000000] * len(self.front_ids)
+        self.side_distances: List[float] = [1000000] * len(self.side_ids)
         for ch in self.distance_ids:
             vl53 = VL53L4CD(self.mux[ch])  # type: ignore
             vl53.timing_budget = 200
@@ -294,7 +297,7 @@ class Robot:
         self.frame = cv2.flip(frame, -1)
         self.gui_frame = self.frame.copy()
         # # print("update: processing frame")
-        self.binary_frame = process_image(self.frame)
+        self.binary_frame, self.line_size = process_image(self.frame)
 
         # # print("update: reading vl53l4cd")
         for idx, sensor in enumerate(self.distance_sensors):
@@ -309,6 +312,10 @@ class Robot:
                         # print(f"update: reading sensor {idx} distance")
                         dist = sensor.distance
                         self.front_distances[self.front_ids.index(sensor_id)] = dist
+                    elif sensor_id in self.side_ids:
+                        # print(f"update: reading sensor {idx} distance")
+                        dist = sensor.distance
+                        self.side_distances[self.side_ids.index(sensor_id)] = dist
             except OSError:
                 # print(f"update: OSError on sensor {idx}")
                 continue

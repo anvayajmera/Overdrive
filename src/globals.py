@@ -1,7 +1,10 @@
-import cv2, numpy as np
+import cv2
+import numpy as np
+
 
 def is_byte(num: int):
     return num >= 0 and num <= 255
+
 
 # =========================
 # Image Processing
@@ -28,6 +31,7 @@ def process_image(img):
         return closing
 
     largest = max(contours, key=cv2.contourArea)
+
     mask = np.zeros_like(closing)
     cv2.drawContours(mask, [largest], -1, 255, cv2.FILLED)  # type: ignore
 
@@ -36,5 +40,4 @@ def process_image(img):
     h, w = mask.shape
     cv2.rectangle(mask, (0, 0), (w - 1, h - 1), 0, 5)
 
-    return cv2.bitwise_and(closing, mask)
-
+    return (cv2.bitwise_and(closing, mask), cv2.contourArea(largest))
