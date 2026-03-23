@@ -1,4 +1,5 @@
 import math
+import time
 
 import cv2
 from cv2 import ximgproc
@@ -31,7 +32,7 @@ def init():
 # Main Linetrace Logic
 # =========================
 def linetrace():
-    
+
     r = Robot()
 
     frame = r.frame.copy()
@@ -53,18 +54,39 @@ def linetrace():
             theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
         )
 
-        # Experimental turning code.
-        # if abs(math.degrees(theta)) > 75:
-        #     r.stop()
-        #     time.sleep(0.5)
-        #     if theta > 0:
-        #         r.turnRight()
-        #     else:
-        #         r.turnLeft()
-
-        #     time.sleep(0.3)
-
         r.set_motor_output(round(output))
+
+        if GUI:
+            cv2.putText(
+                frame,
+                f"Angle: {round(math.degrees(theta), 1)}",
+                (20, 40),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+            cv2.putText(
+                frame,
+                f"Output: {round(output, 1)}",
+                (20, 80),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+
+        # Experimental turning code.
+        if abs(math.degrees(theta)) > 85:
+            print("Linetrace turn angle: ", math.degrees(theta))
+            r.stop()
+            r.update()
+            if GUI:
+                cv2.waitKey(2000)
+            else:
+                time.sleep(0.4)
+            r.turn(math.degrees(theta))
+            r.update()
 
         if GUI:
             cv2.putText(

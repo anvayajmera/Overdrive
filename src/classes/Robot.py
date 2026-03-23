@@ -53,7 +53,7 @@ class Robot:
 
         # Use absolute hardware paths so camera indices never swap again!
         import os
-        
+
         ball_path = "/dev/v4l/by-id/usb-16MP_Camera_Mamufacture_16MP_USB_Camera_2022050701-video-index0"
         if os.path.exists(ball_path):
             self.ball_cam = cv2.VideoCapture(ball_path, cv2.CAP_V4L2)
@@ -61,7 +61,9 @@ class Robot:
             print(f"WARNING: {ball_path} NOT FOUND! Falling back to 0")
             self.ball_cam = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
-        line_path = "/dev/v4l/by-id/usb-HD_USB_Camera_HD_USB_Camera_2020042001-video-index0"
+        line_path = (
+            "/dev/v4l/by-id/usb-HD_USB_Camera_HD_USB_Camera_2020042001-video-index0"
+        )
         if os.path.exists(line_path):
             self.line_cam = cv2.VideoCapture(line_path, cv2.CAP_V4L2)
         else:
@@ -202,7 +204,9 @@ class Robot:
                 cv2.waitKey(1)
 
             diff = (target - self.yaw + 180.0) % 360.0 - 180.0
-            # print(f"Turn debug -> Target: {target:.1f}, Yaw: {self.yaw:.1f}, Diff: {diff:.1f}")
+            # print(
+            #     f"Turn debug -> Target: {target:.1f}, Yaw: {self.yaw:.1f}, Diff: {diff:.1f}"
+            # )
             if abs(diff) <= tol:
                 break
 

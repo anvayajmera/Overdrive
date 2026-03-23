@@ -4,7 +4,7 @@ import time
 import cv2
 
 from classes.Robot import Robot
-from constants import GREEN_KI, GUI, TIMESTEP, X11
+from constants import GUI, TIMESTEP, X11
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
 
@@ -34,27 +34,9 @@ try:
 
         # r.turnLeft()
 
-        # linetrace()
+        linetrace()
 
-        turn_dir, error = green_square()
-
-        if turn_dir != "straight":
-            r.stop()
-            r.forward()
-            time.sleep(error * GREEN_KI)
-            r.stop()
-            time.sleep(0.2)
-
-            r.update()
-
-            turn_dir, _average_y = green_square()
-
-            if turn_dir == "left":
-                r.turn(-90)
-            elif turn_dir == "right":
-                r.turn(90)
-            elif turn_dir == "turn_around":
-                r.turn(180)
+        # green_square()
 
         if GUI:
             if cv2.waitKey(1) & 0xFF == ord("r"):

@@ -1,3 +1,4 @@
+import time
 from typing import Optional, Sequence
 
 import cv2
@@ -5,6 +6,7 @@ import numpy as np
 
 from classes.Robot import Robot
 from constants import (
+    GREEN_KI,
     GREEN_MAX,
     GREEN_MIN,
     GREEN_SQUARE_MIN_AREA,
@@ -137,7 +139,7 @@ def determine_turn_direction(black_borders):
     return turn_left, turn_right, left_low, right_low, average_y
 
 
-def green_square() -> tuple[str, int]:
+def read_squares() -> tuple[str, int]:
     r = Robot()
     contours_grn = find_green_square(r.frame)
 
@@ -177,3 +179,34 @@ def green_square() -> tuple[str, int]:
         cv2.imshow("Green Square", gui_frame)
 
     return res, average_y - (LINE_CAM_HEIGHT // 2 - 40)
+
+
+def green_square() -> None:
+    r = Robot()
+
+    turn_dir, error = read_squares()
+
+    if turn_dir != "straight":
+        r.stop()
+        r.forward()
+        time.sleep(max(error * GREEN_KI, 0))
+        print("sleeping for: ", max(error * GREEN_KI, 0))
+        r.stop()
+
+        # We need to forcefully flush the camera buffer to get the NEW frame
+        # The camera buffers the last 2 frames by default!
+        for _ in range(3):
+            r.update()
+
+        turn_dir, _error = read_squares()
+
+        if GUI:
+            # Small wait to actually see it on the monitor
+            cv2.waitKey(2000)
+
+        if turn_dir == "left":
+            r.turn(-90)
+        elif turn_dir == "right":
+            r.turn(90)
+        elif turn_dir == "turn_around":
+            r.turn(180)
