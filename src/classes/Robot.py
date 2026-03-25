@@ -94,8 +94,8 @@ class Robot:
 
         # Facing the robot, 0 is Left front and 3 is right front, 7 is left, and 4 is right
         self.distance_ids = [0, 3, 4, 7]
-        self.front_ids = [0, 3]
-        self.side_ids = [7, 4]
+        self.front_ids = [3, 0]
+        self.side_ids = [4, 7]
 
         self.distance_sensors: List[VL53L4CD] = []
 
@@ -189,6 +189,36 @@ class Robot:
                 self.gui_frame,
                 f"Yaw: {self.yaw}",
                 (20, 230),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+
+            cv2.putText(
+                self.gui_frame,
+                f"Line size: {self.line_size}",
+                (400, 230),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+
+            cv2.putText(
+                self.gui_frame,
+                f"Left Side: {self.side_distances[0]}",
+                (20, 250),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2,
+            )
+
+            cv2.putText(
+                self.gui_frame,
+                f"Right Side: {self.side_distances[1]}",
+                (20, 270),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
                 (0, 255, 0),
@@ -308,14 +338,14 @@ class Robot:
                     sensor.clear_interrupt()
 
                     sensor_id = self.distance_ids[idx]
-                    if sensor_id in self.front_ids:
-                        # print(f"update: reading sensor {idx} distance")
-                        dist = sensor.distance
-                        self.front_distances[self.front_ids.index(sensor_id)] = dist
-                    elif sensor_id in self.side_ids:
-                        # print(f"update: reading sensor {idx} distance")
-                        dist = sensor.distance
-                        self.side_distances[self.side_ids.index(sensor_id)] = dist
+                    dist = sensor.distance
+                    if dist > 1:
+                        if sensor_id in self.front_ids:
+                            # print(f"update: reading sensor {idx} distance")
+                            self.front_distances[self.front_ids.index(sensor_id)] = dist
+                        elif sensor_id in self.side_ids:
+                            # print(f"update: reading sensor {idx} distance")
+                            self.side_distances[self.side_ids.index(sensor_id)] = dist
             except OSError:
                 # print(f"update: OSError on sensor {idx}")
                 continue

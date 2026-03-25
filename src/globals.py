@@ -28,7 +28,7 @@ def process_image(img):
 
     contours, _ = cv2.findContours(closing, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     if not contours:
-        return closing
+        return (closing, 0.0)
 
     largest = max(contours, key=cv2.contourArea)
 

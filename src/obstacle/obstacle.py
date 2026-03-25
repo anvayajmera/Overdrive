@@ -15,11 +15,13 @@ def obstacle():
 
         initial_yaw = r.yaw
         # turn left until robot is perpendicular to obstacle
-        while r.side_distances[0] > OBS_DETECT_RANGE:
+        while r.side_distances[1] > OBS_DETECT_RANGE:
             r.update()
             if GUI:
                 cv2.waitKey(1)
             r.turnLeft()
+
+        r.stop()
 
         turn_angle = (r.yaw - initial_yaw + 180.0) % 360.0 - 180.0
         print(f"Turn angle: {turn_angle}")
@@ -37,4 +39,4 @@ def obstacle():
         #         time.sleep(TIMESTEP * 2)
 
         # reverse the turn we did at the start, naively, should put us in a better position
-        # r.turn(-turn_angle)
+        r.turn(-turn_angle)
