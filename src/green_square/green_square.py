@@ -6,6 +6,8 @@ import numpy as np
 
 from classes.Robot import Robot
 from constants import (
+    GREEN_ACTION_COOLDOWN_S,
+    GREEN_CONFIRM_FRAMES,
     GREEN_KI,
     GREEN_MAX,
     GREEN_MIN,
@@ -27,6 +29,10 @@ _KERNEL_3 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
 _KERNEL_23 = cv2.getStructuringElement(cv2.MORPH_RECT, (23, 23))
 # 9 iterations of 3x3 is equivalent to 1 iteration of 19x19
 _KERNEL_19 = cv2.getStructuringElement(cv2.MORPH_RECT, (19, 19))
+
+_pending_turn_dir = "straight"
+_pending_turn_frames = 0
+_last_green_action_t = 0.0
 
 
 def find_green_square(frame: np.ndarray) -> Sequence[np.ndarray]:
@@ -181,32 +187,40 @@ def read_squares() -> tuple[str, int]:
     return res, average_y - (LINE_CAM_HEIGHT // 2 - 40)
 
 
-def green_square() -> None:
+def green_square() -> bool:
+    global _pending_turn_dir, _pending_turn_frames, _last_green_action_t
+
     r = Robot()
 
-    turn_dir, error = read_squares()
+    turn_dir, _error = read_squares()
+    now = time.monotonic()
 
-    if turn_dir != "straight":
-        r.stop()
-        r.forward()
-        time.sleep(max(error * GREEN_KI, 0))
-        print("sleeping for: ", max(error * GREEN_KI, 0))
-        r.stop()
+    if turn_dir == "straight":
+        _pending_turn_dir = "straight"
+        _pending_turn_frames = 0
+        return False
 
-        # We need to forcefully flush the camera buffer to get the NEW frame
-        # The camera buffers the last 2 frames by default!
-        for _ in range(3):
-            r.update()
+    if now - _last_green_action_t < GREEN_ACTION_COOLDOWN_S:
+        return False
 
-        turn_dir, _error = read_squares()
+    if turn_dir != _pending_turn_dir:
+        _pending_turn_dir = turn_dir
+        _pending_turn_frames = 1
+        return False
 
-        if GUI:
-            # Small wait to actually see it on the monitor
-            cv2.waitKey(2000)
+    _pending_turn_frames += 1
+    if _pending_turn_frames < GREEN_CONFIRM_FRAMES:
+        return False
 
-        if turn_dir == "left":
-            r.turn(-90)
-        elif turn_dir == "right":
-            r.turn(90)
-        elif turn_dir == "turn_around":
-            r.turn(180)
+    _pending_turn_dir = "straight"
+    _pending_turn_frames = 0
+    _last_green_action_t = now
+
+    r.status.log("GREEN", f"Green square action={turn_dir}", force=True)
+    if turn_dir == "left":
+        r.turn(-90)
+    elif turn_dir == "right":
+        r.turn(90)
+    elif turn_dir == "turn_around":
+        r.turn(180)
+    return True

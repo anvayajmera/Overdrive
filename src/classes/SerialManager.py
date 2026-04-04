@@ -1,4 +1,5 @@
 import threading
+import time
 
 import serial
 
@@ -14,14 +15,18 @@ class SerialManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, port="/dev/ttyACM0", baud=921600):
+    def __init__(self, port="/dev/ttyACM0", baud=921600, write_timeout=0.05):
         if getattr(self, "_initialized", False):
             return
 
         self.port = port
         self.baud = baud
+        self.write_timeout = write_timeout
         self.ser = None
         self._lock = threading.Lock()
+        self._next_reconnect_t = 0.0
+        self._consecutive_write_failures = 0
+        self._last_warn_t = 0.0
         self.connect()
 
         self._initialized = True
@@ -35,11 +40,18 @@ class SerialManager:
             if self.ser and self.ser.is_open:
                 self.ser.close()
             self.ser = serial.Serial(
-                self.port, self.baud, timeout=0.2, write_timeout=1.0
+                self.port, self.baud, timeout=0.2, write_timeout=self.write_timeout
             )
+            self._consecutive_write_failures = 0
         except Exception as e:
-            print(f"Serial connection error on {self.port}: {e}")
+            self._warn(f"Serial connection error on {self.port}: {e}")
             self.ser = None
+
+    def _warn(self, msg: str, cooldown_s: float = 2.0):
+        now = time.monotonic()
+        if now - self._last_warn_t >= cooldown_s:
+            print(msg)
+            self._last_warn_t = now
 
     def send(self, command: int, arg1: int, arg2: int, arg3=1):
         if not is_byte(command):
@@ -59,12 +71,30 @@ class SerialManager:
         packet[4] = arg3
 
         with self._lock:
+            now = time.monotonic()
+
             if not self.ser or not self.ser.is_open:
-                self._perform_connect()
+                if now >= self._next_reconnect_t:
+                    self._perform_connect()
+                else:
+                    return
 
             if self.ser and self.ser.is_open:
                 try:
                     self.ser.write(packet)
+                    self._consecutive_write_failures = 0
                 except (serial.SerialException, serial.SerialTimeoutException) as e:
-                    print(f"Serial write error: {e}")
-                    self._perform_connect()
+                    self._consecutive_write_failures += 1
+                    self._warn(f"Serial write error: {e}")
+
+                    try:
+                        self.ser.close()
+                    except Exception:
+                        pass
+                    self.ser = None
+
+                    # Back off reconnect attempts so repeated motor commands do not stall the loop.
+                    if self._consecutive_write_failures >= 3:
+                        self._next_reconnect_t = time.monotonic() + 1.0
+                    else:
+                        self._next_reconnect_t = time.monotonic() + 0.1

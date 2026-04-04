@@ -16,6 +16,7 @@ public:
 
 private:
     void handlePacket();
+    void runServoPinTest();
 
     // Left front back then right front back
     Motor motors[4];
@@ -25,4 +26,9 @@ private:
     uint8_t serialBuff[5];
     uint8_t serialBuffInd;
     unsigned long lastPacketTime;
+    int servoTestIndex;
+    int previousServoTestIndex;
+    int servoTestAngle;
+    int servoTestDir;
+    unsigned long lastServoTestStepTime;
 };

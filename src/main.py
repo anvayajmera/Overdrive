@@ -4,7 +4,7 @@ import time
 import cv2
 
 from classes.Robot import Robot
-from constants import GUI, TIMESTEP, X11
+from constants import GREEN_CHECK_PERIOD_FRAMES, GUI, TIMESTEP, X11
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
 from obstacle.obstacle import obstacle
@@ -18,6 +18,7 @@ init()
 
 
 next_t = time.perf_counter()
+loop_idx = 0
 
 # print("TIMESTEP: ", TIMESTEP)
 
@@ -32,23 +33,25 @@ try:
         next_t += TIMESTEP
 
         r.update()
+        loop_idx += 1
 
-        # r.turnLeft()
-
-        # linetrace()
-
-        # green_square()
-
-        obstacle()
+        # Run green marker behavior at a lower frequency to keep line control smooth.
+        handled_green = False
+        if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
+            handled_green = green_square()
+        if not handled_green:
+            # Primary behavior: line follow
+            linetrace()
 
         if GUI:
-            if cv2.waitKey(1) & 0xFF == ord("r"):
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("r"):
                 r.turn(90)
-            if cv2.waitKey(1) & 0xFF == ord("l"):
+            if key == ord("l"):
                 r.turn(-90)
-            if cv2.waitKey(1) & 0xFF == ord("u"):
+            if key == ord("u"):
                 r.turn(180)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
+            if key == ord("q"):
                 break
 except KeyboardInterrupt:
     print("Stopping bc of ctrl + C.")
