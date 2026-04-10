@@ -5,6 +5,7 @@ import cv2
 
 from classes.Robot import Robot
 from constants import GREEN_CHECK_PERIOD_FRAMES, GUI, TIMESTEP, X11
+from gap.gap import gap
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
 from obstacle.obstacle import obstacle
@@ -42,6 +43,8 @@ try:
         if not handled_green:
             # Primary behavior: line follow
             linetrace()
+
+            # gap()
 
         if GUI:
             key = cv2.waitKey(1) & 0xFF
