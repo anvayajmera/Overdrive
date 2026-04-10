@@ -35,7 +35,7 @@ try:
         r.update()
         loop_idx += 1
 
-        # Run green marker behavior at a lower frequency to keep line control smooth.
+        # # Run green marker behavior at a lower frequency to keep line control smooth.
         handled_green = False
         if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
             handled_green = green_square()

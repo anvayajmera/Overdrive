@@ -155,8 +155,18 @@ def draw_stanley_overlay(frame, path_points):
     if len(path_points) < 2:
         return frame, 0, 0
 
-    # Nearest point (fixed index for simplicity in this version)
-    idx = min(len(path_points) - 1, 50)
+    # Lookahead point based on physical distance from start
+    lookahead_dist = 120
+    idx = 0
+    p0 = path_points[0]
+    for i, p in enumerate(path_points):
+        if np.linalg.norm(p - p0) >= lookahead_dist:
+            idx = i
+            break
+
+    if idx == 0:
+        idx = min(len(path_points) - 1, 50)
+
     target = path_points[idx]
 
     # Draw path
@@ -165,12 +175,16 @@ def draw_stanley_overlay(frame, path_points):
 
     cv2.circle(frame, tuple(target.astype(int)), 6, (0, 255, 255), -1)
 
-    # Tangent calc: points from current point toward the next point in the sequence
-    if idx < len(path_points) - 1:
-        tangent = path_points[idx + 1] - target
+    # Tangent calc: smooth over 5 points to reduce integer rounding noise
+    idx_next = min(len(path_points) - 1, idx + 5)
+    idx_prev = max(0, idx - 5)
+
+    if idx_next > idx_prev:
+        tangent = path_points[idx_next].astype(float) - path_points[idx_prev].astype(
+            float
+        )
     else:
-        # Use previous point if we're at the end
-        tangent = target - path_points[idx - 1]
+        tangent = path_points[-1].astype(float) - path_points[0].astype(float)
 
     tangent = tangent / (np.linalg.norm(tangent) + 1e-6)
 
@@ -218,27 +232,61 @@ def extract_path(nodes: list[Node], w: int, h: int):
                 min_dist = d
                 start_idx = i
 
-        # Find the longest path in the MST starting from the robot's position.
-        # This identifies the "main spine" and ignores small side branches or artifacts.
-        def get_longest_branch(curr_idx, visited):
+        # Find the best path in the MST starting from the robot's position.
+        # This identifies the "main spine", ignores side branches, and
+        # forces the robot to go straight through cross intersections.
+        def get_longest_branch(curr_idx, prev_idx, visited):
             visited.add(curr_idx)
+            best_score = 1
             best_path = [nodes[curr_idx].point]
+
+            is_junction = len(nodes[curr_idx].connected) >= 3
 
             for neighbor in nodes[curr_idx].connected:
                 if neighbor not in visited:
                     # Explore this branch
-                    branch_path = get_longest_branch(neighbor, visited.copy())
-                    # Keep the branch that has the most points (longest skeleton distance)
-                    if len(branch_path) + 1 > len(best_path):
+                    branch_score, branch_path = get_longest_branch(
+                        neighbor, curr_idx, visited.copy()
+                    )
+
+                    bonus = 0.0
+                    if is_junction and prev_idx is not None:
+                        # Use macro-direction from the robot to avoid pixel aliasing
+                        v_in = nodes[curr_idx].point - nodes[start_idx].point
+
+                        # Look further down the branch to avoid pixel-level junction noise
+                        lookahead_idx = min(len(branch_path) - 1, 10)
+                        v_out = branch_path[lookahead_idx] - nodes[curr_idx].point
+
+                        norm_in = np.linalg.norm(v_in)
+                        norm_out = np.linalg.norm(v_out)
+                        if norm_in > 1e-6 and norm_out > 1e-6:
+                            dot = np.dot(v_in / norm_in, v_out / norm_out)
+                            if dot > 0.0:  # Continuous massive bonus for straightness
+                                bonus = dot * 100000.0
+
+                    # Keep the branch with the highest score
+                    if branch_score + 1 + bonus > best_score:
+                        best_score = branch_score + 1 + bonus
                         best_path = [nodes[curr_idx].point] + branch_path
-            return best_path
+            return best_score, best_path
 
-        path_points = get_longest_branch(start_idx, set())
+        start_visited = {start_idx}
+        branches = []
+        for neighbor in nodes[start_idx].connected:
+            branches.append(
+                get_longest_branch(neighbor, start_idx, start_visited.copy())
+            )
 
-        # Ensure path ordering: Always start from bottom (High Y) to top (Low Y)
-        # start_idx is already nearest the robot, but we double check the endpoints
-        if len(path_points) > 1:
-            if path_points[0][1] < path_points[-1][1]:
-                path_points = path_points[::-1]
+        branches.sort(key=lambda x: x[0], reverse=True)
+
+        if len(branches) >= 2:
+            path_points = (
+                branches[1][1][::-1] + [nodes[start_idx].point] + branches[0][1]
+            )
+        elif len(branches) == 1:
+            path_points = [nodes[start_idx].point] + branches[0][1]
+        else:
+            path_points = [nodes[start_idx].point]
 
     return path_points

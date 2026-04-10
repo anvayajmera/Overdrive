@@ -1,24 +1,11 @@
 import math
-import time
 
 import cv2
 import numpy as np
 from cv2 import ximgproc
 
 from classes.Robot import Robot
-from constants import (
-    BASE_SPEED_PIXEL,
-    CROSSTRACK_GAIN,
-    GUI,
-    LINE_CONF_MAX_AREA,
-    LINE_CONF_MIN_AREA,
-    LINE_CONF_MIN_POINTS,
-    LINE_CONF_MIN_SPAN_PX,
-    LINE_CONF_NEAR_BOTTOM_FRAC,
-    LINE_GOOD_FRAMES_REQUIRED,
-    LINE_MAX_CONTROL_DEG,
-    LINE_LOST_STOP_FRAMES,
-)
+from constants import BASE_SPEED_PIXEL, CROSSTRACK_GAIN, GUI, TURN_THRESH
 
 from .linetrace_helpers import (
     bezier_curve,
@@ -29,18 +16,15 @@ from .linetrace_helpers import (
     extract_skeleton_points,
 )
 
-_line_lost_frames = 0
-_line_good_frames = 0
+_prev_path_start: np.ndarray | None = None
 
 
 def init():
     if GUI:
         cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
-        # cv2.namedWindow("Nodes", cv2.WINDOW_NORMAL)
         cv2.namedWindow("Thinning", cv2.WINDOW_NORMAL)
 
         cv2.resizeWindow("Original", 480, 270)
-        # cv2.resizeWindow("Nodes", 480, 270)
         cv2.resizeWindow("Thinning", 480, 270)
 
 
@@ -48,7 +32,6 @@ def init():
 # Main Linetrace Logic
 # =========================
 def linetrace():
-    global _line_lost_frames, _line_good_frames
 
     r = Robot()
 
@@ -58,122 +41,72 @@ def linetrace():
 
     binary_path = r.binary_frame
     thinned = ximgproc.thinning(binary_path)
+    cv2.rectangle(thinned, (0, 0), (w - 1, h - 1), 0, 3)
 
     key_points = extract_skeleton_points(thinned)
     nodes = build_mst(key_points)
     path_points = extract_path(nodes, w, h)
 
-    path_count = len(path_points)
-    path_span = 0
-    path_bottom_y = 0
-    if path_count > 0:
-        y_vals = np.array([int(p[1]) for p in path_points], dtype=np.int32)
-        path_span = int(y_vals.max() - y_vals.min())
-        path_bottom_y = int(y_vals.max())
+    global _prev_path_start
 
-    line_area = float(getattr(r, "line_size", 0.0))
-    min_bottom_y = int(h * LINE_CONF_NEAR_BOTTOM_FRAC)
-    line_confident = (
-        path_count >= LINE_CONF_MIN_POINTS
-        and LINE_CONF_MIN_AREA <= line_area <= LINE_CONF_MAX_AREA
-        and path_span >= LINE_CONF_MIN_SPAN_PX
-        and path_bottom_y >= min_bottom_y
-    )
+    # --- Path ordering: position-based continuity ---
+    # The correct start endpoint is whichever end is closest to where the path
+    # started last frame. The robot moves ~10-20px per frame, so the true start
+    # barely drifts between frames. If the extraction picked the wrong end (e.g.
+    # at a V-shape where both endpoints are near the bottom), the other endpoint
+    # will be far from _prev_path_start and we flip to correct it.
+    #
+    # The staleness guard (min dist < 280) ensures we don't apply a stale
+    # hint after line loss / reacquisition, where prev_start may be far from
+    # both current endpoints.
+    if len(path_points) > 1 and _prev_path_start is not None:
+        p0 = np.array(path_points[0], dtype=float)
+        p_end = np.array(path_points[-1], dtype=float)
 
-    if line_confident:
-        _line_good_frames += 1
-        _line_lost_frames = 0
-        if _line_good_frames < LINE_GOOD_FRAMES_REQUIRED:
-            r.set_motor_output(0)
-            if GUI:
-                cv2.putText(
-                    frame,
-                    "Line acquiring...",
-                    (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    (0, 220, 255),
-                    2,
-                )
-        else:
-            bez = bezier_curve(path_points)
-            frame, theta, offset_error = draw_stanley_overlay(frame, bez)
+        dist_to_start = np.linalg.norm(p0 - _prev_path_start)
+        dist_to_end = np.linalg.norm(p_end - _prev_path_start)
 
-            output = math.degrees(
-                theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
-            )
-            theta_deg = abs(math.degrees(theta))
-            if theta_deg > 25.0:
-                output *= 1.25
-            output = max(-LINE_MAX_CONTROL_DEG, min(LINE_MAX_CONTROL_DEG, output))
+        if min(dist_to_start, dist_to_end) < 280:
+            if dist_to_end < dist_to_start:
+                path_points = path_points[::-1]
 
-            r.set_motor_output(round(output))
+    _prev_path_start = np.array(path_points[0], dtype=float) if path_points else None
 
-            if GUI:
-                cv2.putText(
-                    frame,
-                    f"Angle: {round(math.degrees(theta), 1)}",
-                    (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 255, 0),
-                    2,
-                )
-                cv2.putText(
-                    frame,
-                    f"Output: {round(output, 1)}",
-                    (20, 80),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.7,
-                    (0, 255, 0),
-                    2,
-                )
-                cv2.putText(
-                    frame,
-                    f"Ln:{int(line_area)} P:{path_count} Sp:{path_span}",
-                    (20, 120),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    (0, 255, 0),
-                    2,
-                )
-    else:
-        _line_good_frames = 0
-        _line_lost_frames += 1
-        r.status.log(
-            "LINETRACE",
-            (
-                f"line reject area={int(line_area)} points={path_count} "
-                f"span={path_span} bottom={path_bottom_y}/{min_bottom_y}"
-            ),
-            cooldown_s=1.0,
-            cooldown_key="LINETRACE:reject",
+    if len(path_points) > 5:
+        bez = bezier_curve(path_points)
+        frame, theta, offset_error = draw_stanley_overlay(frame, bez)
+
+        output = math.degrees(
+            theta + math.atan2(CROSSTRACK_GAIN * offset_error, BASE_SPEED_PIXEL)
         )
-        if _line_lost_frames >= LINE_LOST_STOP_FRAMES:
-            r.set_motor_output(0)
+
+        if abs(math.degrees(theta)) > TURN_THRESH:
+            output *= 3
+
+        r.set_motor_output(round(output))
+
         if GUI:
             cv2.putText(
                 frame,
-                "Line lost",
+                f"Angle: {round(math.degrees(theta), 1)}",
                 (20, 40),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.8,
-                (0, 0, 255),
+                0.7,
+                (0, 255, 0),
                 2,
             )
             cv2.putText(
                 frame,
-                f"Ln:{int(line_area)} P:{path_count} Sp:{path_span} B:{path_bottom_y}/{min_bottom_y}",
+                f"Output: {round(output, 1)}",
                 (20, 80),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                0.55,
-                (0, 0, 255),
+                0.7,
+                (0, 255, 0),
                 2,
             )
 
     if GUI:
         if nodes:
             node_frame = draw_graph_on_frame(og_frame, nodes)
-            # cv2.imshow("Nodes", node_frame)
         cv2.imshow("Original", frame)
         cv2.imshow("Thinning", thinned)

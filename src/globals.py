@@ -35,9 +35,9 @@ def process_image(img):
     mask = np.zeros_like(closing)
     cv2.drawContours(mask, [largest], -1, 255, cv2.FILLED)  # type: ignore
 
-    # Remove edge artifacts by blacking out a small border
-    # This prevents the skeleton from branching or flattening at the frame edges
-    h, w = mask.shape
-    cv2.rectangle(mask, (0, 0), (w - 1, h - 1), 0, 5)
+    # Close small gaps/cracks before thinning so they don't create stray skeleton branches
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    binary_path = cv2.bitwise_and(closing, mask)
+    binary_path = cv2.morphologyEx(binary_path, cv2.MORPH_CLOSE, kernel)
 
-    return (cv2.bitwise_and(closing, mask), cv2.contourArea(largest))
+    return (binary_path, cv2.contourArea(largest))

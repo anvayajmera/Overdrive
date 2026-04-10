@@ -26,16 +26,13 @@ from constants import (
     M_KI,
     M_KP,
     MAX_SPEED,
+    MIN_WHEEL_SPEED,
     MOTORS,
     OLED_ADDR,
     OLED_HEIGHT,
     OLED_MUX_CHANNEL,
     OLED_WIDTH,
     STATUS_HEARTBEAT_S,
-    STEER_DEADBAND,
-    STEER_FILTER_ALPHA,
-    STEER_OUTPUT_LIMIT,
-    STEER_SLEW_PER_FRAME,
     TIMESTEP,
 )
 from globals import process_image
@@ -87,7 +84,9 @@ class Robot:
             if os.path.exists(by_id_path):
                 cap = cv2.VideoCapture(by_id_path, cv2.CAP_V4L2)
                 if cap is not None and cap.isOpened():
-                    self.status.log("CAM", f"{label} camera opened: {by_id_path}", force=True)
+                    self.status.log(
+                        "CAM", f"{label} camera opened: {by_id_path}", force=True
+                    )
                 else:
                     # Some OpenCV/V4L2 builds cannot open by-id symlink paths reliably.
                     # Try the resolved /dev/videoX target before generic index fallback.
@@ -124,7 +123,7 @@ class Robot:
 
             if cap is None or not cap.isOpened():
                 for dev in fallback_devices:
-                    cap = cv2.VideoCapture(dev, cv2.CAP_V4L2)
+                    cap = cv2.VideoCapture(dev, cv2.CAP_V4L2)  # type: ignore
                     if cap is not None and cap.isOpened():
                         self.status.log(
                             "CAM",
@@ -163,7 +162,9 @@ class Robot:
                 force=True,
             )
 
-        line_path = "/dev/v4l/by-id/usb-HD_USB_Camera_HD_USB_Camera_2020042001-video-index0"
+        line_path = (
+            "/dev/v4l/by-id/usb-HD_USB_Camera_HD_USB_Camera_2020042001-video-index0"
+        )
         self.line_cam = open_camera(
             "Line",
             line_path,
@@ -217,7 +218,7 @@ class Robot:
         for ch in imu_channels:
             for addr in (0x28, 0x29):
                 try:
-                    candidate = BNO055_I2C(self.mux[ch], address=addr)
+                    candidate = BNO055_I2C(self.mux[ch], address=addr)  # type: ignore
                     _yaw = candidate.euler[0]  # type: ignore
                     self.IMU = candidate
                     self.status.log(
@@ -284,7 +285,9 @@ class Robot:
                 vl53.start_ranging()
                 self.distance_sensors.append(vl53)
                 self._sensor_channel_by_index.append(ch)
-                self.status.log("SENSOR", f"VL53L4CD online on mux channel {ch}", force=True)
+                self.status.log(
+                    "SENSOR", f"VL53L4CD online on mux channel {ch}", force=True
+                )
             except Exception as e:
                 self.status.log(
                     "SENSOR",
@@ -325,27 +328,22 @@ class Robot:
 
     # Control represents some value to be passed into pid.
     def set_motor_output(self, control: int):
-        raw_output = float(self.m_pid(control))  # type: ignore
-        alpha = STEER_FILTER_ALPHA
-        filtered = (alpha * raw_output) + ((1.0 - alpha) * self.prev_steer)
+        output = int(self.m_pid(control))  # type: ignore
 
-        delta = filtered - self.prev_steer
-        if delta > STEER_SLEW_PER_FRAME:
-            filtered = self.prev_steer + STEER_SLEW_PER_FRAME
-        elif delta < -STEER_SLEW_PER_FRAME:
-            filtered = self.prev_steer - STEER_SLEW_PER_FRAME
+        left_spd = BASE_SPEED + output
+        right_spd = BASE_SPEED - output
 
-        if abs(filtered) < STEER_DEADBAND:
-            filtered = 0.0
+        if 0 < abs(left_spd) < MIN_WHEEL_SPEED:
+            left_spd = MIN_WHEEL_SPEED * (1 if left_spd > 0 else -1)
+        if 0 < abs(right_spd) < MIN_WHEEL_SPEED:
+            right_spd = MIN_WHEEL_SPEED * (1 if right_spd > 0 else -1)
 
-        output = int(max(-STEER_OUTPUT_LIMIT, min(STEER_OUTPUT_LIMIT, filtered)))
-        self.prev_steer = filtered
+        self.set_left_speed(left_spd)
+        self.set_right_speed(right_spd)
 
-        self.set_left_speed(BASE_SPEED + output)
-        self.set_right_speed(BASE_SPEED - output)
         self.status.log(
             "CTRL",
-            f"set_motor_output control={control} raw={raw_output:.1f} steer={output}",
+            f"set_motor_output control={control} steer={output} left_spd={left_spd} right_spd={right_spd}",
             cooldown_s=1.5,
             cooldown_key="CTRL:pid-output",
         )
@@ -560,7 +558,9 @@ class Robot:
                 )
                 self._last_no_imu_log_t = now
 
-        motors_spinning = any(abs(m.speed) > 20 and m.speed != -2000 for m in self.motors)
+        motors_spinning = any(
+            abs(m.speed) > 20 and m.speed != -2000 for m in self.motors
+        )
         left_cmd = 0
         right_cmd = 0
         if len(self.motors) >= 4:
@@ -571,8 +571,7 @@ class Robot:
         # If motors have been actively spinning but IMU has not changed for 30 frames (0.5 sec).
         if (
             IMU_AUTO_RESET_ENABLED
-            and
-            self.IMU is not None
+            and self.IMU is not None
             and motors_spinning
             and turning_commanded
             and self._imu_freeze_frames > 30
@@ -607,7 +606,9 @@ class Robot:
         self.line_cam_read_ms = (time.perf_counter() - cam_read_start) * 1000.0
         if not ret:
             self.line_cam_fail_count += 1
-            self.status.log("CAM", "Line camera frame read failed", level="WARN", cooldown_s=1.0)
+            self.status.log(
+                "CAM", "Line camera frame read failed", level="WARN", cooldown_s=1.0
+            )
             self.status.update(self)
             return
         now_mono = time.monotonic()
@@ -622,10 +623,7 @@ class Robot:
         self._last_line_cam_t = now_mono
 
         frame = cv2.flip(frame, -1)
-        if (
-            frame.shape[1] != LINE_CAM_WIDTH
-            or frame.shape[0] != LINE_CAM_HEIGHT
-        ):
+        if frame.shape[1] != LINE_CAM_WIDTH or frame.shape[0] != LINE_CAM_HEIGHT:
             frame = cv2.resize(
                 frame,
                 (LINE_CAM_WIDTH, LINE_CAM_HEIGHT),
@@ -732,7 +730,7 @@ class Robot:
                     "PERF",
                     (
                         f"Low update FPS {self._latest_fps:.1f} "
-                        f"(update took {(update_end - update_start)*1000:.1f} ms)"
+                        f"(update took {(update_end - update_start) * 1000:.1f} ms)"
                     ),
                     level="WARN",
                     cooldown_s=5.0,
