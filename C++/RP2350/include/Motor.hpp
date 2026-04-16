@@ -16,4 +16,7 @@ private:
     int _pin1;
     int _pin2;
     bool _isReversed;
+    bool _attached;
+
+    void attachIfNeeded();
 };

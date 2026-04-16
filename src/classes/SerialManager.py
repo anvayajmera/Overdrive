@@ -1,5 +1,8 @@
+import glob
+import os
 import threading
 import time
+from typing import Optional
 
 import serial
 import serial.tools.list_ports
@@ -16,11 +19,11 @@ class SerialManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, port=None, baud=921600, write_timeout=0.05):
+    def __init__(self, port: Optional[str] = None, baud=921600, write_timeout=0.05):
         if getattr(self, "_initialized", False):
             return
 
-        self.user_port = port
+        self.port = port or os.getenv("ROBOT_SERIAL_PORT")
         self.baud = baud
         self.write_timeout = write_timeout
         self.ser = None
@@ -46,27 +49,57 @@ class SerialManager:
         with self._lock:
             self._perform_connect()
 
+    def _serial_candidates(self) -> list[str]:
+        candidates: list[str] = []
+        if self.port:
+            candidates.append(self.port)
+
+        env_port = os.getenv("ROBOT_SERIAL_PORT")
+        if env_port:
+            candidates.append(env_port)
+
+        for pattern in ("/dev/serial/by-id/*", "/dev/ttyUSB*", "/dev/ttyACM*"):
+            candidates.extend(sorted(glob.glob(pattern)))
+
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for path in candidates:
+            if path in seen:
+                continue
+            seen.add(path)
+            deduped.append(path)
+        return deduped
+
     def _perform_connect(self):
-        target_port = self.user_port if self.user_port else self._auto_detect_port()
-        try:
-            if self.ser and self.ser.is_open:
+        if self.ser and self.ser.is_open:
+            try:
                 self.ser.close()
+            except Exception:
+                pass
+        self.ser = None
 
-            self.ser = serial.Serial()
-            self.ser.port = target_port
-            self.ser.baudrate = self.baud
-            self.ser.timeout = 0.2
-            self.ser.write_timeout = self.write_timeout
-            # Set DTR and RTS False BEFORE opening to prevent ESP32 from resetting
-            self.ser.dtr = False
-            self.ser.rts = False
-            self.ser.open()
+        candidates = self._serial_candidates()
+        if not candidates:
+            self._warn(
+                "Serial connection skipped: no /dev/serial/by-id, /dev/ttyUSB*, or /dev/ttyACM* device found."
+            )
+            return
 
-            time.sleep(0.5)
-            self._consecutive_write_failures = 0
-        except Exception as e:
-            self._warn(f"Serial connection error on {target_port}: {e}")
-            self.ser = None
+        last_error: Optional[Exception] = None
+        for candidate in candidates:
+            try:
+                self.ser = serial.Serial(
+                    candidate, self.baud, timeout=0.2, write_timeout=self.write_timeout
+                )
+                self.port = candidate
+                self._consecutive_write_failures = 0
+                self._warn(f"Serial connected on {candidate}", cooldown_s=0.5)
+                return
+            except Exception as e:
+                last_error = e
+
+        self._warn(f"Serial connection error on candidates {candidates}: {last_error}")
+        self.ser = None
 
     def _warn(self, msg: str, cooldown_s: float = 2.0):
         now = time.monotonic()

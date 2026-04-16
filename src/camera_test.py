@@ -5,6 +5,23 @@ import cv2
 import Jetson.GPIO as GPIO
 from ultralytics import YOLO
 from classes.Motor import Motor
+from camera_pipeline import (
+    build_mjpg_gstreamer_pipeline,
+    should_use_gpu_decode,
+    should_use_gstreamer,
+)
+from constants import (
+    BALL_CAM_CAPTURE_FPS,
+    BALL_CAM_CAPTURE_HEIGHT,
+    BALL_CAM_CAPTURE_WIDTH,
+    BALL_CAM_DEVICE,
+    LINE_CAM_CAPTURE_FPS,
+    LINE_CAM_CAPTURE_HEIGHT,
+    LINE_CAM_CAPTURE_WIDTH,
+    LINE_CAM_DEVICE,
+    USE_GPU_DECODE,
+    USE_GSTREAMER,
+)
 
 # Setup GPIO + initialize motors
 # GPIO.setmode(GPIO.BOARD)
@@ -36,25 +53,75 @@ from classes.Motor import Motor
 ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
 silver_model = YOLO("./models/silver_classify_s.engine", task="classify")
 
-# Initialize Camera
-camera1 = cv2.VideoCapture(2, cv2.CAP_V4L2)
-camera1.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
-camera1.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-camera1.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-camera1.set(cv2.CAP_PROP_FPS, 60)
+use_gstreamer = should_use_gstreamer(USE_GSTREAMER)
+use_gpu_decode = should_use_gpu_decode(USE_GPU_DECODE)
 
-camera2 = cv2.VideoCapture(0, cv2.CAP_V4L2)
-camera2.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*'MJPG'))
-camera2.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-camera2.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-camera2.set(cv2.CAP_PROP_FPS, 60)
+
+def open_camera(device, width, height, fps, fallbacks):
+    if use_gstreamer:
+        gpu_first = [use_gpu_decode]
+        if use_gpu_decode:
+            gpu_first.append(False)
+        for use_gpu in gpu_first:
+            pipeline = build_mjpg_gstreamer_pipeline(
+                device, width=width, height=height, fps=fps, use_gpu=use_gpu
+            )
+            cap = cv2.VideoCapture(pipeline, cv2.CAP_GSTREAMER)
+            if cap is not None and cap.isOpened():
+                return cap
+    cap = cv2.VideoCapture(device, cv2.CAP_V4L2)
+    if cap is not None and cap.isOpened():
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        cap.set(cv2.CAP_PROP_FPS, fps)
+        return cap
+
+    resolved = os.path.realpath(device)
+    if resolved and resolved != device:
+        cap = cv2.VideoCapture(resolved, cv2.CAP_V4L2)
+        if cap is not None and cap.isOpened():
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            cap.set(cv2.CAP_PROP_FPS, fps)
+            return cap
+
+    for dev in fallbacks:
+        cap = cv2.VideoCapture(dev, cv2.CAP_V4L2)
+        if cap is not None and cap.isOpened():
+            cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc(*"MJPG"))
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            cap.set(cv2.CAP_PROP_FPS, fps)
+            return cap
+
+    return None
+
+
+# Initialize Camera
+camera1 = open_camera(
+    BALL_CAM_DEVICE,
+    BALL_CAM_CAPTURE_WIDTH,
+    BALL_CAM_CAPTURE_HEIGHT,
+    BALL_CAM_CAPTURE_FPS,
+    fallbacks=["/dev/video2", "/dev/video3", 2, 3],
+)
+
+camera2 = open_camera(
+    LINE_CAM_DEVICE,
+    LINE_CAM_CAPTURE_WIDTH,
+    LINE_CAM_CAPTURE_HEIGHT,
+    LINE_CAM_CAPTURE_FPS,
+    fallbacks=["/dev/video0", "/dev/video1", 0, 1],
+)
 
 # Quit if camera isn't open
-if not camera1.isOpened():
+if camera1 is None or not camera1.isOpened():
     print("Camera is not opened")
     exit()
 
-if not camera2.isOpened():
+if camera2 is None or not camera2.isOpened():
     print("Camera2 is not opened")
     exit()
 
@@ -76,6 +143,11 @@ while True:
     if not ret2:
         print("Can't receive frame from camera 2")
         break
+
+    if len(frame.shape) == 3 and frame.shape[2] == 4:
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    if len(frame2.shape) == 3 and frame2.shape[2] == 4:
+        frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGRA2BGR)
 
     frame = cv2.flip(frame, 0)
     frame2 = cv2.flip(frame2, 0)

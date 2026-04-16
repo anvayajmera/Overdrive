@@ -46,7 +46,9 @@ try:
 
             r.forward()
 
-            # gap()
+            gap()
+
+            # obstacle()
 
             # obstacle()
 

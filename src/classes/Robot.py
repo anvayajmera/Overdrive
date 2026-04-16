@@ -11,7 +11,12 @@ from adafruit_vl53l4cd import VL53L4CD
 from simple_pid import PID
 
 from constants import (
+    BALL_CAM_CAPTURE_FPS,
+    BALL_CAM_CAPTURE_HEIGHT,
+    BALL_CAM_CAPTURE_WIDTH,
+    BALL_CAM_DEVICE,
     BASE_SPEED,
+    DISABLE_CAMERAS,
     ENABLE_BALL_CAM,
     FPS,
     FRONT_OBS_ENTER_THRESH,
@@ -19,6 +24,10 @@ from constants import (
     GUI,
     IMU_AUTO_RESET_ENABLED,
     LINE_CAM_BUFFERSIZE,
+    LINE_CAM_CAPTURE_FPS,
+    LINE_CAM_CAPTURE_HEIGHT,
+    LINE_CAM_CAPTURE_WIDTH,
+    LINE_CAM_DEVICE,
     LINE_CAM_HEIGHT,
     LINE_CAM_WIDTH,
     LOW_FPS_WARN_THRESHOLD,
@@ -32,8 +41,20 @@ from constants import (
     OLED_HEIGHT,
     OLED_MUX_CHANNEL,
     OLED_WIDTH,
+    RELAY_ACTIVE_LOW,
+    RELAY_DEFAULT_ON,
+    SERVO_ARM,
+    SERVO_CLAW_LEFT,
+    SERVO_CLAW_RIGHT,
+    SERVO_COUNT,
+    SERVO_DEFAULT_ANGLES,
+    SERVO_PLATFORM_BACK,
+    SET_RELAY_STATE,
+    SET_SERVO_ANGLE,
     STATUS_HEARTBEAT_S,
     TIMESTEP,
+    USE_GPU_DECODE,
+    USE_GSTREAMER,
 )
 from globals import process_image
 
@@ -68,8 +89,46 @@ class Robot:
             force=True,
         )
 
+        self.servo_angles: List[int] = [-1] * SERVO_COUNT
+        for servo_id in range(SERVO_COUNT):
+            default_angle = (
+                SERVO_DEFAULT_ANGLES[servo_id]
+                if servo_id < len(SERVO_DEFAULT_ANGLES)
+                else 100
+            )
+            self.set_servo_angle(servo_id, default_angle)
+
+        self.relay_on: Optional[bool] = None
+        self.set_relay(RELAY_DEFAULT_ON)
+        self.status.log(
+            "ACT",
+            f"ESP32 actuator bridge initialized (servos={SERVO_COUNT}, relay_active_low={RELAY_ACTIVE_LOW})",
+            force=True,
+        )
+
         # Use absolute hardware paths so camera indices never swap again.
         import os
+
+        disable_cameras = DISABLE_CAMERAS or os.getenv("OVERDRIVE_DISABLE_CAMERAS") in {
+            "1",
+            "true",
+            "TRUE",
+            "yes",
+            "YES",
+            "on",
+            "ON",
+        }
+
+        if disable_cameras:
+            self.ball_cam = None
+            self.line_cam = None
+            self.status.log(
+                "CAM",
+                "Cameras disabled (OVERDRIVE_DISABLE_CAMERAS=1)",
+                force=True,
+            )
+        else:
+            self.ball_cam = None
 
         def open_camera(
             label: str,
@@ -144,36 +203,32 @@ class Robot:
 
             return cap
 
-        self.ball_cam: Optional[cv2.VideoCapture] = None
-        if ENABLE_BALL_CAM:
-            ball_path = "/dev/v4l/by-id/usb-16MP_Camera_Mamufacture_16MP_USB_Camera_2022050701-video-index0"
-            self.ball_cam = open_camera(
-                "Ball",
-                ball_path,
-                fallback_devices=["/dev/video2", "/dev/video3", 2, 3, 0, 1],
-                width=1920,
-                height=1080,
-                fps=FPS,
-            )
-        else:
-            self.status.log(
-                "CAM",
-                "Ball camera disabled to prioritize line camera stability",
-                force=True,
-            )
+        if not disable_cameras:
+            if ENABLE_BALL_CAM:
+                self.ball_cam = open_camera(
+                    "Ball",
+                    BALL_CAM_DEVICE,
+                    fallback_devices=["/dev/video2", "/dev/video3", 2, 3, 0, 1],
+                    width=BALL_CAM_CAPTURE_WIDTH,
+                    height=BALL_CAM_CAPTURE_HEIGHT,
+                    fps=BALL_CAM_CAPTURE_FPS,
+                )
+            else:
+                self.status.log(
+                    "CAM",
+                    "Ball camera disabled to prioritize line camera stability",
+                    force=True,
+                )
 
-        line_path = (
-            "/dev/v4l/by-id/usb-HD_USB_Camera_HD_USB_Camera_2020042001-video-index0"
-        )
-        self.line_cam = open_camera(
-            "Line",
-            line_path,
-            fallback_devices=["/dev/video0", "/dev/video1", 0, 1],
-            width=LINE_CAM_WIDTH,
-            height=LINE_CAM_HEIGHT,
-            fps=FPS,
-            buffersize=LINE_CAM_BUFFERSIZE,
-        )
+            self.line_cam = open_camera(
+                "Line",
+                LINE_CAM_DEVICE,
+                fallback_devices=["/dev/video0", "/dev/video1", 0, 1],
+                width=LINE_CAM_CAPTURE_WIDTH,
+                height=LINE_CAM_CAPTURE_HEIGHT,
+                fps=LINE_CAM_CAPTURE_FPS,
+                buffersize=LINE_CAM_BUFFERSIZE,
+            )
 
         if self.ball_cam is not None:
             ball_w = int(self.ball_cam.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -183,18 +238,29 @@ class Robot:
                 f"Ball camera negotiated resolution {ball_w}x{ball_h}",
                 force=True,
             )
-        line_w = int(self.line_cam.get(cv2.CAP_PROP_FRAME_WIDTH))
-        line_h = int(self.line_cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        self.status.log(
-            "CAM",
-            f"Line camera negotiated resolution {line_w}x{line_h}",
-            force=True,
-        )
-        self.status.log(
-            "CAM",
-            f"Line processing resolution {LINE_CAM_WIDTH}x{LINE_CAM_HEIGHT}",
-            force=True,
-        )
+            self.status.log(
+                "CAM",
+                f"Ball camera capture target {BALL_CAM_CAPTURE_WIDTH}x{BALL_CAM_CAPTURE_HEIGHT} @ {BALL_CAM_CAPTURE_FPS}fps",
+                force=True,
+            )
+        if self.line_cam is not None:
+            line_w = int(self.line_cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+            line_h = int(self.line_cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.status.log(
+                "CAM",
+                f"Line camera negotiated resolution {line_w}x{line_h}",
+                force=True,
+            )
+            self.status.log(
+                "CAM",
+                f"Line camera capture target {LINE_CAM_CAPTURE_WIDTH}x{LINE_CAM_CAPTURE_HEIGHT} @ {LINE_CAM_CAPTURE_FPS}fps",
+                force=True,
+            )
+            self.status.log(
+                "CAM",
+                f"Line processing resolution {LINE_CAM_WIDTH}x{LINE_CAM_HEIGHT}",
+                force=True,
+            )
 
         self.prev_steer = 0.0
 
@@ -325,6 +391,45 @@ class Robot:
             return
         self.motors[2].set_speed(speed)
         self.motors[3].set_speed(speed)
+
+    def set_servo_angle(self, servo_id: int, angle: int):
+        if not 0 <= servo_id < SERVO_COUNT:
+            raise ValueError(
+                f"Invalid servo index {servo_id}, expected 0-{SERVO_COUNT - 1}"
+            )
+
+        bounded = max(0, min(int(angle), 180))
+        if self.servo_angles[servo_id] == bounded:
+            return
+        self.servo_angles[servo_id] = bounded
+        return self.sm.send(SET_SERVO_ANGLE, servo_id, bounded, 0)
+
+    def set_arm_servo(self, angle: int):
+        return self.set_servo_angle(SERVO_ARM, angle)
+
+    def set_claw_left_servo(self, angle: int):
+        return self.set_servo_angle(SERVO_CLAW_LEFT, angle)
+
+    def set_claw_right_servo(self, angle: int):
+        return self.set_servo_angle(SERVO_CLAW_RIGHT, angle)
+
+    def set_platform_back_servo(self, angle: int):
+        return self.set_servo_angle(SERVO_PLATFORM_BACK, angle)
+
+    def set_relay(self, on: bool):
+        desired = bool(on)
+        if self.relay_on == desired:
+            return
+        self.relay_on = desired
+        self.sm.send(SET_RELAY_STATE, 1 if desired else 0, 0, 0)
+        output_level = "LOW" if (desired and RELAY_ACTIVE_LOW) else "HIGH"
+        if not desired:
+            output_level = "HIGH" if RELAY_ACTIVE_LOW else "LOW"
+        self.status.log(
+            "RELAY",
+            f"relay {'ON' if desired else 'OFF'} (ESP32 pin level {output_level})",
+            cooldown_s=0.5,
+        )
 
     # Control represents some value to be passed into pid.
     def set_motor_output(self, control: int):
@@ -508,13 +613,23 @@ class Robot:
     def cleanup(self):
         self.status.log("BOOT", "Robot cleanup started", force=True)
         try:
+            self.set_relay(False)
+        except Exception as e:
+            self.status.log(
+                "RELAY", f"Failed to force relay OFF during cleanup: {e}", level="WARN"
+            )
+        try:
             if self.ball_cam is not None:
                 self.ball_cam.release()
-            self.line_cam.release()
+            if self.line_cam is not None:
+                self.line_cam.release()
         except Exception as e:
             self.status.log("BOOT", f"Cleanup error: {e}", level="WARN", force=True)
         finally:
-            self.line_cam.release()
+            if self.ball_cam is not None:
+                self.ball_cam.release()
+            if self.line_cam is not None:
+                self.line_cam.release()
             self.status.log("BOOT", "Robot cleanup completed", force=True)
 
     def update(self):
@@ -602,6 +717,9 @@ class Robot:
             self._imu_freeze_frames = 0
 
         cam_read_start = time.perf_counter()
+        if self.line_cam is None:
+            self.status.update(self)
+            return
         ret, frame = self.line_cam.read()
         self.line_cam_read_ms = (time.perf_counter() - cam_read_start) * 1000.0
         if not ret:
@@ -623,6 +741,9 @@ class Robot:
         self._last_line_cam_t = now_mono
 
         frame = cv2.flip(frame, -1)
+        if len(frame.shape) == 3 and frame.shape[2] == 4:
+            # GStreamer GPU pipeline outputs BGRx; drop alpha for OpenCV ops.
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
         if frame.shape[1] != LINE_CAM_WIDTH or frame.shape[0] != LINE_CAM_HEIGHT:
             frame = cv2.resize(
                 frame,
