@@ -26,6 +26,10 @@ def gap():
                 r.stop()
                 return
 
+        if GUI:
+            cv2.waitKey(400)
+        else:
+            time.sleep(0.4)
         r.status.log("GAP", "Line found, resuming linetrace.", force=True)
         r.stop()
         if GUI:

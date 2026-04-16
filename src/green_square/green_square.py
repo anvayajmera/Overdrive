@@ -233,9 +233,9 @@ def green_square() -> bool:
     else:
         time.sleep(1.5)
     if turn_dir == "left":
-        r.turn(-90)
+        r.turn(-80)
     elif turn_dir == "right":
-        r.turn(90)
+        r.turn(80)
     elif turn_dir == "turn_around":
         r.turn(180)
     return True

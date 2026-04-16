@@ -73,8 +73,8 @@ bno_channel = 7
 distanceSensors = [
     # 0,
     # 3,
+    # 4,
     4,
-    7,
 ]
 sensors: List[adafruit_vl53l4cd.VL53L4CD] = []
 for ch in distanceSensors:
@@ -100,6 +100,9 @@ while True:
         while not sensor.data_ready:
             pass
         sensor.clear_interrupt()
-        print(f"Sensor {idx}: {sensor.distance} cm", end="; ")
+        print(
+            f"Sensor {idx}: {sensor.distance} cm, Range Status: {sensor.range_status}",
+            end="; ",
+        )
 
     print("\n")

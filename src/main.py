@@ -42,9 +42,13 @@ try:
             handled_green = green_square()
         if not handled_green:
             # Primary behavior: line follow
-            linetrace()
+            # linetrace()
+
+            r.forward()
 
             # gap()
+
+            # obstacle()
 
         if GUI:
             key = cv2.waitKey(1) & 0xFF

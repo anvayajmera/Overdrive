@@ -417,7 +417,7 @@ class Robot:
             cv2.putText(
                 self.gui_frame,
                 f"Line size: {self.line_size}",
-                (400, 230),
+                (280, 230),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.7,
                 (0, 255, 0),
@@ -636,22 +636,38 @@ class Robot:
 
         for idx, sensor in enumerate(self.distance_sensors):
             try:
+                updated = False
+
                 if sensor.data_ready:
                     sensor.clear_interrupt()
-                    sensor_id = self._sensor_channel_by_index[idx]
                     dist = sensor.distance
-                    if dist > 1:
+                    status = sensor.range_status
+                    sensor_id = self._sensor_channel_by_index[idx]
+                    if status == 0 and dist > 1:
+                        updated = True
                         if sensor_id in self.front_ids:
                             self.front_distances[self.front_ids.index(sensor_id)] = dist
                         elif sensor_id in self.side_ids:
                             self.side_distances[self.side_ids.index(sensor_id)] = dist
+                if not updated:
+                    sensor_id = self._sensor_channel_by_index[idx]
+
+                    if sensor_id in self.front_ids:
+                        self.front_distances[self.front_ids.index(sensor_id)] = 1000000
+                    elif sensor_id in self.side_ids:
+                        self.side_distances[self.side_ids.index(sensor_id)] = 1000000
             except OSError:
                 self.status.log(
                     "SENSOR",
-                    f"Transient OSError from sensor idx={idx}",
+                    f"Transient OSError from sensor idx={idx}, attempting recovery",
                     level="WARN",
                     cooldown_s=2.0,
                 )
+                try:
+                    sensor.clear_interrupt()
+                    sensor.start_ranging()
+                except Exception:
+                    pass
                 continue
             except Exception as e:
                 self.status.log(
@@ -664,24 +680,29 @@ class Robot:
 
         min_front = min(self.front_distances) if self.front_distances else 1_000_000
 
-        if not self.obs_detected:
-            if min_front < FRONT_OBS_ENTER_THRESH:
-                self._obs_detect_hits += 1
-            else:
-                self._obs_detect_hits = 0
-
-            if self._obs_detect_hits >= 2:
-                self.obs_detected = True
-                self._obs_clear_hits = 0
+        if min_front < FRONT_OBS_ENTER_THRESH:
+            self.obs_detected = True
         else:
-            if min_front < FRONT_OBS_EXIT_THRESH:
-                self._obs_clear_hits = 0
-            else:
-                self._obs_clear_hits += 1
+            self.obs_detected = False
 
-            if self._obs_clear_hits >= 3:
-                self.obs_detected = False
-                self._obs_detect_hits = 0
+        # if not self.obs_detected:
+        #     if min_front < FRONT_OBS_ENTER_THRESH:
+        #         self._obs_detect_hits += 1
+        #     else:
+        #         self._obs_detect_hits = 0
+
+        #     if self._obs_detect_hits >= 2:
+        #         self.obs_detected = True
+        #         self._obs_clear_hits = 0
+        # else:
+        #     if min_front < FRONT_OBS_EXIT_THRESH:
+        #         self._obs_clear_hits = 0
+        #     else:
+        #         self._obs_clear_hits += 1
+
+        #     if self._obs_clear_hits >= 3:
+        #         self.obs_detected = False
+        #         self._obs_detect_hits = 0
         if self.obs_detected != self._last_obs_state:
             if self.obs_detected:
                 self.status.log(

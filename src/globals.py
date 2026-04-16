@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from constants import BLACK_THRESHOLD
+
 
 def is_byte(num: int):
     return num >= 0 and num <= 255
@@ -11,17 +13,9 @@ def is_byte(num: int):
 # =========================
 def process_image(img):
     blur = cv2.blur(img, (3, 3))
-    f = blur.astype(np.float32) + 1
-    log_img = cv2.log(f)
-    log_img = cv2.normalize(log_img, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)  # type: ignore
 
-    # Faster thresholding
-    b, g, r = cv2.split(log_img)
-    _, b_bin = cv2.threshold(b, 200, 255, cv2.THRESH_BINARY_INV)
-    _, g_bin = cv2.threshold(g, 200, 255, cv2.THRESH_BINARY_INV)
-    _, r_bin = cv2.threshold(r, 200, 255, cv2.THRESH_BINARY_INV)
-
-    binary = cv2.bitwise_and(cv2.bitwise_and(b_bin, g_bin), r_bin)
+    gray = cv2.cvtColor(blur, cv2.COLOR_BGR2GRAY)
+    _, binary = cv2.threshold(gray, BLACK_THRESHOLD, 255, cv2.THRESH_BINARY_INV)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     closing = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)

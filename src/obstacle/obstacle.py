@@ -4,7 +4,15 @@ import cv2
 import numpy as np
 
 from classes.Robot import Robot
-from constants import GUI, LINE_DETECT_SIZE, OBS_DETECT_RANGE, OBS_RANGE, TIMESTEP
+from constants import (
+    BASE_SPEED,
+    GUI,
+    LINE_DETECT_SIZE,
+    MAX_SPEED,
+    OBS_DETECT_RANGE,
+    OBS_RANGE,
+    TIMESTEP,
+)
 
 
 def obstacle():
@@ -12,6 +20,11 @@ def obstacle():
 
     if r.obs_detected:
         r.stop()
+
+        if GUI:
+            cv2.waitKey(700)
+        else:
+            time.sleep(0.7)
 
         initial_yaw = r.yaw
         # turn left until robot is perpendicular to obstacle
@@ -21,22 +34,46 @@ def obstacle():
                 cv2.waitKey(1)
             r.turnLeft()
 
+        r.status.log("OBSTACLE", f"Found obstacle on right side: {r.side_distances[1]}")
+
         r.stop()
 
+        if GUI:
+            cv2.waitKey(1500)
+        else:
+            time.sleep(1.5)
+
         turn_angle = (r.yaw - initial_yaw + 180.0) % 360.0 - 180.0
-        print(f"Turn angle: {turn_angle}")
+        r.status.log("OBSTACLE", f"Turn angle: {turn_angle}")
 
         # drive around until line is detected
-        # while r.line_size < LINE_DETECT_SIZE:
-        #     r.update()
-        #     if r.side_distances[0] > OBS_RANGE:
-        #         r.turnRight()
-        #     else:
-        #         r.turnLeft()
-        #     if GUI:
-        #         cv2.waitKey(int(2 * TIMESTEP * 1000))
-        #     else:
-        #         time.sleep(TIMESTEP * 2)
+        kp = 3.0
+        while r.line_size < LINE_DETECT_SIZE:
+            r.update()
+
+            # Proportional wall following
+            # error > 0 means too far from wall, error < 0 means too close
+            error = r.side_distances[1] - OBS_RANGE
+
+            # Constrain the error so we don't apply an extreme correction if sensor reads infinity
+            error = max(-15.0, min(15.0, error))
+
+            correction = int(error * kp)
+
+            # Move forward while adjusting the steering proportionally
+            # BASE_SPEED (~50) is high enough to keep the motors spinning!
+            # Add a default orbital bias so the robot naturally curves around the obstacle
+            orbital_bias = 15
+            left_speed = BASE_SPEED + correction + orbital_bias
+            right_speed = BASE_SPEED - correction - orbital_bias
+
+            r.set_left_speed(right_speed)
+            r.set_right_speed(left_speed)
+
+            if GUI:
+                cv2.waitKey(100)
+            else:
+                time.sleep(TIMESTEP)
 
         # reverse the turn we did at the start, naively, should put us in a better position
         r.turn(-turn_angle)

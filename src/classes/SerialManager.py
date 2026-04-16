@@ -2,6 +2,7 @@ import threading
 import time
 
 import serial
+import serial.tools.list_ports
 
 from constants import START_BYTE
 from globals import is_byte
@@ -15,11 +16,11 @@ class SerialManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, port="/dev/ttyACM0", baud=921600, write_timeout=0.05):
+    def __init__(self, port=None, baud=921600, write_timeout=0.05):
         if getattr(self, "_initialized", False):
             return
 
-        self.port = port
+        self.user_port = port
         self.baud = baud
         self.write_timeout = write_timeout
         self.ser = None
@@ -31,20 +32,40 @@ class SerialManager:
 
         self._initialized = True
 
+    def _auto_detect_port(self):
+        ports = serial.tools.list_ports.comports()
+        for p in ports:
+            # Usually ESP32/RP2040 show up as ttyUSB or ttyACM
+            if "ACM" in p.device or "USB" in p.device:
+                print(f"Auto-detected serial port: {p.device}")
+                return p.device
+        print("Could not auto-detect serial port, falling back to /dev/ttyACM0")
+        return "/dev/ttyACM0"  # fallback
+
     def connect(self):
         with self._lock:
             self._perform_connect()
 
     def _perform_connect(self):
+        target_port = self.user_port if self.user_port else self._auto_detect_port()
         try:
             if self.ser and self.ser.is_open:
                 self.ser.close()
-            self.ser = serial.Serial(
-                self.port, self.baud, timeout=0.2, write_timeout=self.write_timeout
-            )
+
+            self.ser = serial.Serial()
+            self.ser.port = target_port
+            self.ser.baudrate = self.baud
+            self.ser.timeout = 0.2
+            self.ser.write_timeout = self.write_timeout
+            # Set DTR and RTS False BEFORE opening to prevent ESP32 from resetting
+            self.ser.dtr = False
+            self.ser.rts = False
+            self.ser.open()
+
+            time.sleep(0.5)
             self._consecutive_write_failures = 0
         except Exception as e:
-            self._warn(f"Serial connection error on {self.port}: {e}")
+            self._warn(f"Serial connection error on {target_port}: {e}")
             self.ser = None
 
     def _warn(self, msg: str, cooldown_s: float = 2.0):
