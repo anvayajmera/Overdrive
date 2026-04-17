@@ -9,6 +9,7 @@ from gap.gap import gap
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
 from obstacle.obstacle import obstacle
+from victims.victim import victim, victim_init
 
 if GUI and not X11:
     os.environ.setdefault("DISPLAY", ":0")
@@ -16,6 +17,7 @@ if GUI and not X11:
 r = Robot()
 
 init()
+victim_init()
 
 
 next_t = time.perf_counter()
@@ -36,17 +38,21 @@ try:
         r.update()
         loop_idx += 1
 
+        victim()
+
         # # Run green marker behavior at a lower frequency to keep line control smooth.
         handled_green = False
         if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
-            handled_green = green_square()
+            # handled_green = green_square()
+            pass
         if not handled_green:
+            pass
             # Primary behavior: line follow
             # linetrace()
 
-            r.forward()
+            # r.forward()
 
-            gap()
+            # gap()
 
             # obstacle()
 

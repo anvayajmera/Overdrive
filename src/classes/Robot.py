@@ -9,6 +9,7 @@ from adafruit_bno055 import BNO055_I2C
 from adafruit_tca9548a import TCA9548A
 from adafruit_vl53l4cd import VL53L4CD
 from simple_pid import PID
+from ultralytics import YOLO
 
 from constants import (
     BALL_CAM_CAPTURE_FPS,
@@ -205,6 +206,8 @@ class Robot:
 
         if not disable_cameras:
             if ENABLE_BALL_CAM:
+                self.ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
+
                 self.ball_cam = open_camera(
                     "Ball",
                     BALL_CAM_DEVICE,
