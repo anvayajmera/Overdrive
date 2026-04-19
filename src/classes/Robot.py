@@ -438,8 +438,8 @@ class Robot:
     def set_motor_output(self, control: int):
         output = int(self.m_pid(control))  # type: ignore
 
-        left_spd = BASE_SPEED + output
-        right_spd = BASE_SPEED - output
+        left_spd = BASE_SPEED - output
+        right_spd = BASE_SPEED + output
 
         if 0 < abs(left_spd) < MIN_WHEEL_SPEED:
             left_spd = MIN_WHEEL_SPEED * (1 if left_spd > 0 else -1)
@@ -471,13 +471,13 @@ class Robot:
         self.status.log("MOTOR", "backward()", cooldown_s=1.5)
 
     def turnLeft(self):
-        self.set_left_speed(MAX_SPEED)
-        self.set_right_speed(-MAX_SPEED)
+        self.set_left_speed(-MAX_SPEED)
+        self.set_right_speed(MAX_SPEED)
         self.status.log("MOTOR", "turnLeft()", cooldown_s=1.5)
 
     def turnRight(self):
-        self.set_left_speed(-MAX_SPEED)
-        self.set_right_speed(MAX_SPEED)
+        self.set_left_speed(MAX_SPEED)
+        self.set_right_speed(-MAX_SPEED)
         self.status.log("MOTOR", "turnRight()", cooldown_s=1.5)
 
     def update_gui(self):
@@ -593,11 +593,11 @@ class Robot:
             speed = max(70, min(MAX_SPEED, int(abs(diff) * 1.5)))
 
             if diff > 0:
-                self.set_left_speed(-speed)
-                self.set_right_speed(speed)
-            else:
                 self.set_left_speed(speed)
                 self.set_right_speed(-speed)
+            else:
+                self.set_left_speed(-speed)
+                self.set_right_speed(speed)
             time.sleep(TIMESTEP)
 
         self.stop()

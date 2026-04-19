@@ -1,6 +1,7 @@
 import time
 
 from constants import SET_MOTOR_SPEED
+
 from .SerialManager import SerialManager
 
 

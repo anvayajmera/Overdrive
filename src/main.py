@@ -38,17 +38,15 @@ try:
         r.update()
         loop_idx += 1
 
-        victim()
+        # victim()
 
         # # Run green marker behavior at a lower frequency to keep line control smooth.
         handled_green = False
         if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
-            # handled_green = green_square()
-            pass
+            handled_green = green_square()
         if not handled_green:
-            pass
             # Primary behavior: line follow
-            # linetrace()
+            r.forward()
 
             # r.forward()
 
@@ -57,6 +55,7 @@ try:
             # obstacle()
 
             # obstacle()
+            pass
 
         if GUI:
             key = cv2.waitKey(1) & 0xFF
@@ -66,6 +65,12 @@ try:
                 r.turn(-90)
             if key == ord("u"):
                 r.turn(180)
+            elif key == ord("c"):
+                timestamp = int(time.time())
+
+                raw_filename = f"capture_raw_{timestamp}.jpg"
+                cv2.imwrite(raw_filename, r.frame)
+                print(f"Saved raw frame to {raw_filename}")
             if key == ord("q"):
                 break
 except KeyboardInterrupt:

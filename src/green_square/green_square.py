@@ -203,39 +203,40 @@ def green_square() -> bool:
     # if now - _last_green_action_t < GREEN_ACTION_COOLDOWN_S:
     #     return False
 
-    if turn_dir != _pending_turn_dir:
-        _pending_turn_dir = turn_dir
-        _pending_turn_frames = 1
-        r.status.log(
-            "GREEN",
-            f"Green square pending action={_pending_turn_dir} ({_pending_turn_frames}/{GREEN_CONFIRM_FRAMES})",
-            force=True,
-        )
-        return False
+    # if turn_dir != _pending_turn_dir:
+    #     _pending_turn_dir = turn_dir
+    #     _pending_turn_frames = 1
+    #     r.status.log(
+    #         "GREEN",
+    #         f"Green square pending action={_pending_turn_dir} ({_pending_turn_frames}/{GREEN_CONFIRM_FRAMES})",
+    #         force=True,
+    #     )
+    #     return False
 
     _pending_turn_frames += 1
-    if _pending_turn_frames < GREEN_CONFIRM_FRAMES:
-        r.status.log(
-            "GREEN",
-            f"Green square pending action={_pending_turn_dir} ({_pending_turn_frames}/{GREEN_CONFIRM_FRAMES})",
-            force=True,
-        )
-        return False
+    # if _pending_turn_frames < GREEN_CONFIRM_FRAMES:
+    #     r.status.log(
+    #         "GREEN",
+    #         f"Green square pending action={_pending_turn_dir} ({_pending_turn_frames}/{GREEN_CONFIRM_FRAMES})",
+    #         force=True,
+    #     )
+    #     return False
 
     _pending_turn_dir = "straight"
     _pending_turn_frames = 0
     _last_green_action_t = now
 
+    r.stop()
     r.status.log("GREEN", f"Green square action={turn_dir}", force=True)
     r.forward()
     if GUI:
-        cv2.waitKey(1500)
+        cv2.waitKey(800)
     else:
-        time.sleep(1.5)
+        time.sleep(0.8)
     if turn_dir == "left":
-        r.turn(-80)
+        r.turn(-45)
     elif turn_dir == "right":
-        r.turn(80)
+        r.turn(45)
     elif turn_dir == "turn_around":
         r.turn(180)
     return True
