@@ -1,4 +1,5 @@
 import math
+import time
 
 import cv2
 import numpy as np
@@ -17,6 +18,14 @@ from .linetrace_helpers import (
 )
 
 _prev_path_start: np.ndarray | None = None
+_last_linetrace_time: float = 0.0
+
+
+def reset_path():
+    global _prev_path_start
+    _prev_path_start = None
+    r = Robot()
+    r.status.log("GAP", "RESET PATH START")
 
 
 def init():
@@ -47,28 +56,30 @@ def linetrace():
     nodes = build_mst(key_points)
     path_points = extract_path(nodes, w, h)
 
-    global _prev_path_start
+    global _prev_path_start, _last_linetrace_time
 
-    # --- Path ordering: position-based continuity ---
-    # The correct start endpoint is whichever end is closest to where the path
-    # started last frame. The robot moves ~10-20px per frame, so the true start
-    # barely drifts between frames. If the extraction picked the wrong end (e.g.
-    # at a V-shape where both endpoints are near the bottom), the other endpoint
-    # will be far from _prev_path_start and we flip to correct it.
-    #
-    # The staleness guard (min dist < 280) ensures we don't apply a stale
-    # hint after line loss / reacquisition, where prev_start may be far from
-    # both current endpoints.
-    if len(path_points) > 1 and _prev_path_start is not None:
+    # Reset path continuity if it's been a while since linetrace was last called (e.g. during a gap)
+    now = time.time()
+    if now - _last_linetrace_time > 0.5:
+        _prev_path_start = None
+    _last_linetrace_time = now
+
+    if len(path_points) > 1:
         p0 = np.array(path_points[0], dtype=float)
         p_end = np.array(path_points[-1], dtype=float)
 
-        dist_to_start = np.linalg.norm(p0 - _prev_path_start)
-        dist_to_end = np.linalg.norm(p_end - _prev_path_start)
+        # Default: path should start from bottom of screen (higher Y is closer to bottom)
+        should_flip = p_end[1] > p0[1]
 
-        if min(dist_to_start, dist_to_end) < 280:
-            if dist_to_end < dist_to_start:
-                path_points = path_points[::-1]
+        if _prev_path_start is not None:
+            dist_to_start = np.linalg.norm(p0 - _prev_path_start)
+            dist_to_end = np.linalg.norm(p_end - _prev_path_start)
+
+            if min(dist_to_start, dist_to_end) < 280:
+                should_flip = dist_to_end < dist_to_start
+
+        if should_flip:
+            path_points = path_points[::-1]
 
     _prev_path_start = np.array(path_points[0], dtype=float) if path_points else None
 

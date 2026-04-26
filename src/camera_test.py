@@ -13,6 +13,7 @@ from constants import (
     BALL_CAM_CAPTURE_HEIGHT,
     BALL_CAM_CAPTURE_WIDTH,
     BALL_CAM_DEVICE,
+    DISABLE_LINE_CAM,
     LINE_CAM_CAPTURE_FPS,
     LINE_CAM_CAPTURE_HEIGHT,
     LINE_CAM_CAPTURE_WIDTH,
@@ -92,57 +93,69 @@ camera1 = open_camera(
     fallbacks=["/dev/video2", "/dev/video3", 2, 3],
 )
 
-# camera2 = open_camera(
-#     LINE_CAM_DEVICE,
-#     LINE_CAM_CAPTURE_WIDTH,
-#     LINE_CAM_CAPTURE_HEIGHT,
-#     LINE_CAM_CAPTURE_FPS,
-#     fallbacks=["/dev/video0", "/dev/video1", 0, 1],
-# )
+if not DISABLE_LINE_CAM:
+    camera2 = open_camera(
+        LINE_CAM_DEVICE,
+        LINE_CAM_CAPTURE_WIDTH,
+        LINE_CAM_CAPTURE_HEIGHT,
+        LINE_CAM_CAPTURE_FPS,
+        fallbacks=["/dev/video0", "/dev/video1", 0, 1],
+    )
 
 # Quit if camera isn't open
 if camera1 is None or not camera1.isOpened():
     print("Camera is not opened")
     exit()
 
-# if camera2 is None or not camera2.isOpened():
-#     print("Camera2 is not opened")
-#     exit()
+if not DISABLE_LINE_CAM and (camera2 is None or not camera2.isOpened()):
+    print("Camera2 is not opened")
+    exit()
 
 # Weird trick to detect window closing
 ball_window = "YOLO Ball Inference"
 silver_window = "YOLO Silver Inference"
 cv2.namedWindow(ball_window, cv2.WINDOW_AUTOSIZE)
-cv2.namedWindow(silver_window, cv2.WINDOW_AUTOSIZE)
+if not DISABLE_LINE_CAM:
+    cv2.namedWindow(silver_window, cv2.WINDOW_AUTOSIZE)
+
 
 while True:
     # Fetch numpy frame from cam
     ret, frame = camera1.read()
-    # ret2, frame2 = camera2.read()
+    if not DISABLE_LINE_CAM:
+        ret2, frame2 = camera2.read()
 
     if not ret:
         print("Can't receive frame...")
         break
 
-    # if not ret2:
-    #     print("Can't receive frame from camera 2")
-    #     break
+    if not DISABLE_LINE_CAM and not ret2:
+        print("Can't receive frame from camera 2")
+        break
 
     if len(frame.shape) == 3 and frame.shape[2] == 4:
         frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-    # if len(frame2.shape) == 3 and frame2.shape[2] == 4:
-    #     frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGRA2BGR)
+
+    if not DISABLE_LINE_CAM:
+        if len(frame2.shape) == 3 and frame2.shape[2] == 4:
+            frame2 = cv2.cvtColor(frame2, cv2.COLOR_BGRA2BGR)
 
     frame = cv2.flip(frame, 0)
-    # frame2 = cv2.flip(frame2, 0)
+
+    if not DISABLE_LINE_CAM:
+        frame2 = cv2.flip(frame2, 0)
 
     # Run inference on the frame
     ball_results = ball_model(frame)
-    # silver_results = silver_model(frame2)
+
+    if not DISABLE_LINE_CAM:
+        silver_results = silver_model(frame2)
 
     # Visualize results
     ball_annotated_frame = ball_results[0].plot()
-    # silver_annotated_frame = silver_results[0].plot()
+
+    if not DISABLE_LINE_CAM:
+        silver_annotated_frame = silver_results[0].plot()
 
     # Resize with cuda modules
     gpu_mat = cv2.cuda.GpuMat()
@@ -150,15 +163,20 @@ while True:
     gpu_mat.upload(ball_annotated_frame)
     resized_ball_mat = cv2.cuda.resize(gpu_mat, (960, 540))
 
-    # gpu_mat.upload(silver_annotated_frame)
-    # resized_line_mat = cv2.cuda.resize(gpu_mat, (960, 540))
+    if not DISABLE_LINE_CAM:
+        gpu_mat.upload(silver_annotated_frame)
+        resized_line_mat = cv2.cuda.resize(gpu_mat, (960, 540))
 
     resized_ball = resized_ball_mat.download()
-    # resized_line = resized_line_mat.download()
+
+    if not DISABLE_LINE_CAM:
+        resized_line = resized_line_mat.download()
 
     # Show results in window
     cv2.imshow(ball_window, resized_ball)
-    # cv2.imshow(silver_window, resized_line)
+
+    if not DISABLE_LINE_CAM:
+        cv2.imshow(silver_window, resized_line)
 
     # If q is pressed quit
     if cv2.waitKey(1) & 0xFF == ord("q"):
@@ -166,10 +184,14 @@ while True:
     # If window is closed quit
     if cv2.getWindowProperty(ball_window, cv2.WND_PROP_AUTOSIZE) < 1:
         break
-    if cv2.getWindowProperty(silver_window, cv2.WND_PROP_AUTOSIZE) < 1:
-        break
+
+    if not DISABLE_LINE_CAM:
+        if cv2.getWindowProperty(silver_window, cv2.WND_PROP_AUTOSIZE) < 1:
+            break
 
 # When everyting is done release camera and close windows
 camera1.release()
+if not DISABLE_LINE_CAM:
+    camera2.release()
 cv2.destroyAllWindows()
 # GPIO.cleanup()

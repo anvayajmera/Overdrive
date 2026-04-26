@@ -35,3 +35,7 @@ def process_image(img):
     binary_path = cv2.morphologyEx(binary_path, cv2.MORPH_CLOSE, kernel)
 
     return (binary_path, cv2.contourArea(largest))
+
+
+def calc_linear_acc(acceleration):
+    return np.sqrt(acceleration[0] ** 2 + acceleration[1] ** 2)

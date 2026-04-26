@@ -16,8 +16,7 @@ if GUI and not X11:
 
 r = Robot()
 
-init()
-victim_init()
+# victim_init()
 
 
 next_t = time.perf_counter()
@@ -46,7 +45,6 @@ try:
             # handled_green = green_square()
             pass
         if not handled_green:
-            pass
             # Primary behavior: line follow
             # linetrace()
 
@@ -56,9 +54,11 @@ try:
 
             # obstacle()
 
-            # obstacle()
+            pass
 
         if GUI:
+            # cv2.imshow("Ball Camera", r.ball_frame)
+
             key = cv2.waitKey(1) & 0xFF
             if key == ord("r"):
                 r.turn(90)
@@ -66,6 +66,15 @@ try:
                 r.turn(-90)
             if key == ord("u"):
                 r.turn(180)
+            elif key == ord("c"):
+                timestamp = int(time.time())
+
+                save_dir = "images"
+                os.makedirs(save_dir, exist_ok=True)
+
+                raw_filename = os.path.join(save_dir, f"capture_raw_{timestamp}.jpg")
+                cv2.imwrite(raw_filename, r.ball_frame)
+                print(f"Saved raw frame to {raw_filename}")
             if key == ord("q"):
                 break
 except KeyboardInterrupt:

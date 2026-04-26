@@ -53,8 +53,8 @@ time.sleep(3)
 GPIO.output(relayPin, GPIO.LOW)
 time.sleep(3)
 
-bno_channel = 7
-# bno = adafruit_bno055.BNO055_I2C(pca[bno_channel])
+bno_channel = 4
+bno = adafruit_bno055.BNO055_I2C(pca[bno_channel])
 
 # oled.fill(0)
 # oled.show()
@@ -92,17 +92,17 @@ while True:
     # else:
     #     print("Touch sensor not touched.")
 
-    # print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (mpu.gyro))
+    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (bno.acceleration))
     # print("Gyro X:%.2f, Y: %.2f, Z: %.2f degrees/s" % (mpu.acceleration))
     # print(bno.euler)
 
-    for idx, sensor in enumerate(sensors):
-        while not sensor.data_ready:
-            pass
-        sensor.clear_interrupt()
-        print(
-            f"Sensor {idx}: {sensor.distance} cm, Range Status: {sensor.range_status}",
-            end="; ",
-        )
+    # for idx, sensor in enumerate(sensors):
+    #     while not sensor.data_ready:
+    #         pass
+    #     sensor.clear_interrupt()
+    #     print(
+    #         f"Sensor {idx}: {sensor.distance} cm, Range Status: {sensor.range_status}",
+    #         end="; ",
+    #     )
 
     print("\n")

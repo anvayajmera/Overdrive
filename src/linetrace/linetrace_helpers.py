@@ -173,6 +173,9 @@ def draw_stanley_overlay(frame, path_points):
     for p in path_points:
         cv2.circle(frame, tuple(p.astype(int)), 2, (0, 255, 0), -1)
 
+    # Distinctly draw the start point in red
+    cv2.circle(frame, tuple(path_points[0].astype(int)), 8, (0, 0, 255), -1)
+
     cv2.circle(frame, tuple(target.astype(int)), 6, (0, 255, 255), -1)
 
     # Tangent calc: smooth over 5 points to reduce integer rounding noise

@@ -126,14 +126,14 @@ void Robot::update()
     parseInput();
 
     unsigned long now = millis();
-    if (!motorFailsafeEngaged && (now - lastMotorPacketTime > MOTOR_FAILSAFE_MS))
-    {
-        for (int i = 0; i < 4; i++)
-        {
-            motors[i].stop();
-        }
-        motorFailsafeEngaged = true;
-    }
+    // if (!motorFailsafeEngaged && (now - lastMotorPacketTime > MOTOR_FAILSAFE_MS))
+    // {
+    //     for (int i = 0; i < 4; i++)
+    //     {
+    //         motors[i].stop();
+    //     }
+    //     motorFailsafeEngaged = true;
+    // }
 
     if (SERVO_TEST_ENABLED)
     {

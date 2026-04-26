@@ -18,6 +18,7 @@ from constants import (
     BALL_CAM_DEVICE,
     BASE_SPEED,
     DISABLE_CAMERAS,
+    DISABLE_LINE_CAM,
     ENABLE_BALL_CAM,
     FPS,
     FRONT_OBS_ENTER_THRESH,
@@ -100,7 +101,6 @@ class Robot:
             self.set_servo_angle(servo_id, default_angle)
 
         self.relay_on: Optional[bool] = None
-        self.set_relay(RELAY_DEFAULT_ON)
         self.status.log(
             "ACT",
             f"ESP32 actuator bridge initialized (servos={SERVO_COUNT}, relay_active_low={RELAY_ACTIVE_LOW})",
@@ -126,6 +126,12 @@ class Robot:
             self.status.log(
                 "CAM",
                 "Cameras disabled (OVERDRIVE_DISABLE_CAMERAS=1)",
+                force=True,
+            )
+        elif DISABLE_LINE_CAM:
+            self.status.log(
+                "CAM",
+                "Line camera disabled (DISABLE_LINE_CAM=True)",
                 force=True,
             )
         else:
@@ -223,15 +229,18 @@ class Robot:
                     force=True,
                 )
 
-            self.line_cam = open_camera(
-                "Line",
-                LINE_CAM_DEVICE,
-                fallback_devices=["/dev/video0", "/dev/video1", 0, 1],
-                width=LINE_CAM_CAPTURE_WIDTH,
-                height=LINE_CAM_CAPTURE_HEIGHT,
-                fps=LINE_CAM_CAPTURE_FPS,
-                buffersize=LINE_CAM_BUFFERSIZE,
-            )
+            if not DISABLE_LINE_CAM:
+                self.line_cam = open_camera(
+                    "Line",
+                    LINE_CAM_DEVICE,
+                    fallback_devices=["/dev/video0", "/dev/video1", 0, 1],
+                    width=LINE_CAM_CAPTURE_WIDTH,
+                    height=LINE_CAM_CAPTURE_HEIGHT,
+                    fps=LINE_CAM_CAPTURE_FPS,
+                    buffersize=LINE_CAM_BUFFERSIZE,
+                )
+            else:
+                self.line_cam = None
 
         if self.ball_cam is not None:
             ball_w = int(self.ball_cam.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -381,6 +390,8 @@ class Robot:
         self.line_cam_fail_count = 0
         self._last_line_cam_t = 0.0
 
+        self.ball_count = 3
+
         self.status.log("BOOT", "Robot initialization completed", force=True)
 
     def set_left_speed(self, speed: int):
@@ -438,8 +449,8 @@ class Robot:
     def set_motor_output(self, control: int):
         output = int(self.m_pid(control))  # type: ignore
 
-        left_spd = BASE_SPEED + output
-        right_spd = BASE_SPEED - output
+        left_spd = BASE_SPEED - output
+        right_spd = BASE_SPEED + output
 
         if 0 < abs(left_spd) < MIN_WHEEL_SPEED:
             left_spd = MIN_WHEEL_SPEED * (1 if left_spd > 0 else -1)
@@ -471,13 +482,13 @@ class Robot:
         self.status.log("MOTOR", "backward()", cooldown_s=1.5)
 
     def turnLeft(self):
-        self.set_left_speed(MAX_SPEED)
-        self.set_right_speed(-MAX_SPEED)
+        self.set_left_speed(-MAX_SPEED)
+        self.set_right_speed(MAX_SPEED)
         self.status.log("MOTOR", "turnLeft()", cooldown_s=1.5)
 
     def turnRight(self):
-        self.set_left_speed(-MAX_SPEED)
-        self.set_right_speed(MAX_SPEED)
+        self.set_left_speed(MAX_SPEED)
+        self.set_right_speed(-MAX_SPEED)
         self.status.log("MOTOR", "turnRight()", cooldown_s=1.5)
 
     def update_gui(self):
@@ -593,11 +604,11 @@ class Robot:
             speed = max(70, min(MAX_SPEED, int(abs(diff) * 1.5)))
 
             if diff > 0:
-                self.set_left_speed(-speed)
-                self.set_right_speed(speed)
-            else:
                 self.set_left_speed(speed)
                 self.set_right_speed(-speed)
+            else:
+                self.set_left_speed(-speed)
+                self.set_right_speed(speed)
             time.sleep(TIMESTEP)
 
         self.stop()
@@ -615,12 +626,6 @@ class Robot:
 
     def cleanup(self):
         self.status.log("BOOT", "Robot cleanup started", force=True)
-        try:
-            self.set_relay(False)
-        except Exception as e:
-            self.status.log(
-                "RELAY", f"Failed to force relay OFF during cleanup: {e}", level="WARN"
-            )
         try:
             if self.ball_cam is not None:
                 self.ball_cam.release()
@@ -720,66 +725,69 @@ class Robot:
             self._imu_freeze_frames = 0
 
         cam_read_start = time.perf_counter()
-        if self.line_cam is None:
-            self.status.update(self)
-            return
-        ret, frame = self.line_cam.read()
-        self.line_cam_read_ms = (time.perf_counter() - cam_read_start) * 1000.0
-        if not ret:
-            self.line_cam_fail_count += 1
-            self.status.log(
-                "CAM", "Line camera frame read failed", level="WARN", cooldown_s=1.0
-            )
-            self.status.update(self)
-            return
-        now_mono = time.monotonic()
-        if self._last_line_cam_t > 0:
-            dt = now_mono - self._last_line_cam_t
-            if dt > 0:
-                inst = 1.0 / dt
-                if self.line_cam_fps <= 0:
-                    self.line_cam_fps = inst
-                else:
-                    self.line_cam_fps = (0.85 * self.line_cam_fps) + (0.15 * inst)
-        self._last_line_cam_t = now_mono
 
-        frame = cv2.flip(frame, -1)
-        if len(frame.shape) == 3 and frame.shape[2] == 4:
-            # GStreamer GPU pipeline outputs BGRx; drop alpha for OpenCV ops.
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
-        if frame.shape[1] != LINE_CAM_WIDTH or frame.shape[0] != LINE_CAM_HEIGHT:
-            frame = cv2.resize(
-                frame,
-                (LINE_CAM_WIDTH, LINE_CAM_HEIGHT),
-                interpolation=cv2.INTER_AREA,
-            )
+        if self.line_cam is not None:
+            ret, frame = self.line_cam.read()
 
-        self.frame = frame
-        self.gui_frame = self.frame.copy()
-        self.binary_frame, self.line_size = process_image(self.frame)
+            self.line_cam_read_ms = (time.perf_counter() - cam_read_start) * 1000.0
+            if not ret:
+                self.line_cam_fail_count += 1
+                self.status.log(
+                    "CAM", "Line camera frame read failed", level="WARN", cooldown_s=1.0
+                )
+                self.status.update(self)
+                return
+            now_mono = time.monotonic()
+            if self._last_line_cam_t > 0:
+                dt = now_mono - self._last_line_cam_t
+                if dt > 0:
+                    inst = 1.0 / dt
+                    if self.line_cam_fps <= 0:
+                        self.line_cam_fps = inst
+                    else:
+                        self.line_cam_fps = (0.85 * self.line_cam_fps) + (0.15 * inst)
+            self._last_line_cam_t = now_mono
+
+            frame = cv2.flip(frame, -1)
+
+            if len(frame.shape) == 3 and frame.shape[2] == 4:
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+
+            self.frame = frame
+
+        if self.ball_cam is not None:
+            ret2, ball_frame = self.ball_cam.read()
+            ball_frame = cv2.flip(ball_frame, 0)
+            if len(ball_frame.shape) == 3 and ball_frame.shape[2] == 4:
+                ball_frame = cv2.cvtColor(ball_frame, cv2.COLOR_BGRA2BGR)
+
+            self.ball_frame = ball_frame
+
+        if self.line_cam is not None:
+            self.gui_frame = self.frame.copy()
+            self.binary_frame, self.line_size = process_image(self.frame)
 
         for idx, sensor in enumerate(self.distance_sensors):
             try:
-                updated = False
-
                 if sensor.data_ready:
                     sensor.clear_interrupt()
                     dist = sensor.distance
                     status = sensor.range_status
                     sensor_id = self._sensor_channel_by_index[idx]
                     if status == 0 and dist > 1:
-                        updated = True
                         if sensor_id in self.front_ids:
                             self.front_distances[self.front_ids.index(sensor_id)] = dist
                         elif sensor_id in self.side_ids:
                             self.side_distances[self.side_ids.index(sensor_id)] = dist
-                if not updated:
-                    sensor_id = self._sensor_channel_by_index[idx]
-
-                    if sensor_id in self.front_ids:
-                        self.front_distances[self.front_ids.index(sensor_id)] = 1000000
-                    elif sensor_id in self.side_ids:
-                        self.side_distances[self.side_ids.index(sensor_id)] = 1000000
+                    else:
+                        if sensor_id in self.front_ids:
+                            self.front_distances[self.front_ids.index(sensor_id)] = (
+                                1000000
+                            )
+                        elif sensor_id in self.side_ids:
+                            self.side_distances[self.side_ids.index(sensor_id)] = (
+                                1000000
+                            )
             except OSError:
                 self.status.log(
                     "SENSOR",
@@ -860,8 +868,8 @@ class Robot:
             )
             self._last_heartbeat_t = now
 
-        if GUI:
-            self.update_gui()
+        # if GUI:
+        # self.update_gui()
 
         self.status.update(self)
 

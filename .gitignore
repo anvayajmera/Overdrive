@@ -4,6 +4,8 @@
 .codex
 codexwork/
 
+images/
+
 # Vagrant
 .vagrant/
 
