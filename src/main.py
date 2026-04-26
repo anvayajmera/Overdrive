@@ -37,16 +37,15 @@ try:
         r.update()
         loop_idx += 1
 
-        victim()
+        # victim()
 
         # # Run green marker behavior at a lower frequency to keep line control smooth.
         handled_green = False
         if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
-            # handled_green = green_square()
-            pass
+            handled_green = green_square()
         if not handled_green:
             # Primary behavior: line follow
-            # linetrace()
+            r.forward()
 
             # r.forward()
 

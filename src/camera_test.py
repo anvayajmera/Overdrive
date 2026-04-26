@@ -8,6 +8,7 @@ import Jetson.GPIO as GPIO
 from ultralytics import YOLO
 
 from classes.Motor import Motor
+from classes.Robot import Robot
 from constants import (
     BALL_CAM_CAPTURE_FPS,
     BALL_CAM_CAPTURE_HEIGHT,
@@ -117,6 +118,9 @@ silver_window = "YOLO Silver Inference"
 cv2.namedWindow(ball_window, cv2.WINDOW_AUTOSIZE)
 if not DISABLE_LINE_CAM:
     cv2.namedWindow(silver_window, cv2.WINDOW_AUTOSIZE)
+
+
+r = Robot()
 
 
 while True:
