@@ -238,6 +238,15 @@ def extract_path(nodes: list[Node], w: int, h: int):
         # Find the best path in the MST starting from the robot's position.
         # This identifies the "main spine", ignores side branches, and
         # forces the robot to go straight through cross intersections.
+        #
+        # Minimum number of MST nodes a candidate branch must contain before
+        # the straightness bonus is applied.  Each node represents ~15 px of
+        # skeleton (extract_skeleton_points step=15), so 5 nodes ≈ 75 px.
+        # Corner-thinning artifacts are always 1–2 nodes; real path
+        # continuations are always >> 5, so this threshold cleanly separates
+        # the two without affecting + or T intersections.
+        MIN_BRANCH_NODES_FOR_BONUS = 5
+
         def get_longest_branch(curr_idx, prev_idx, visited):
             visited.add(curr_idx)
             best_score = 1
@@ -253,7 +262,16 @@ def extract_path(nodes: list[Node], w: int, h: int):
                     )
 
                     bonus = 0.0
-                    if is_junction and prev_idx is not None:
+                    # Only reward straight continuations that have meaningful
+                    # length.  len(branch_path) is the raw node count of this
+                    # sub-branch – it is NOT inflated by recursive bonuses –
+                    # so it reliably distinguishes real branches from the tiny
+                    # corner artifacts that thinning leaves at turn apexes.
+                    if (
+                        is_junction
+                        and prev_idx is not None
+                        and len(branch_path) >= MIN_BRANCH_NODES_FOR_BONUS
+                    ):
                         # Use macro-direction from the robot to avoid pixel aliasing
                         v_in = nodes[curr_idx].point - nodes[start_idx].point
 

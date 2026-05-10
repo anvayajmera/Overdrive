@@ -45,13 +45,15 @@ try:
             handled_green = green_square()
         if not handled_green:
             # Primary behavior: line follow
-            r.forward()
+            # r.forward()
 
             # r.forward()
+            #
+            linetrace()
 
             # gap()
 
-            # obstacle()
+            obstacle()
 
             pass
 
