@@ -5,6 +5,7 @@
 codexwork/
 
 images/
+models/
 
 # Vagrant
 .vagrant/

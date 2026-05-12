@@ -1,7 +1,9 @@
+import time
+
 import cv2
 import numpy as np
 
-from constants import BLACK_THRESHOLD
+from constants import BLACK_THRESHOLD, GUI
 
 
 def is_byte(num: int):
@@ -39,3 +41,10 @@ def process_image(img):
 
 def calc_linear_acc(acceleration):
     return np.sqrt(acceleration[0] ** 2 + acceleration[1] ** 2)
+
+
+def delay(sec: float):
+    if GUI:
+        cv2.waitKey(int(sec * 1000))
+    else:
+        time.sleep(sec)

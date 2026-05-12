@@ -15,6 +15,7 @@ from constants import (
     RED_MIN_2,
     RED_VICTIM_THRESH,
 )
+from globals import delay
 from green_square.green_square import find_green_contour
 
 ball_window = "Ball Camera"
@@ -122,106 +123,84 @@ def turnToFaceRed():
 
 def victim():
     r = Robot()
-    # frame2 = cv2.flip(frame2, 0)
-    #
-    if r.ball_count == 3:
-        # First look for red
-        turnToFaceRed()
 
-        if GUI:
-            cv2.waitKey(500)
-        else:
-            time.sleep(500)
+    # if r.ball_count == 3:
+    #     # First look for red
+    #     turnToFaceRed()
 
-        while not r.obs_detected:
-            r.update()
-            r.forward()
+    #     delay(0.5)
 
-        r.stop()
-        r.backward()
+    #     while not r.obs_detected:
+    #         r.update()
+    #         r.forward()
 
-        if GUI:
-            cv2.waitKey(500)
-        else:
-            time.sleep(500)
+    #     r.stop()
+    #     r.backward()
 
-        r.turn(180)
+    #     delay(0.5)
 
-        if GUI:
-            cv2.waitKey(500)
-        else:
-            time.sleep(500)
+    #     r.turn(180)
 
-        r.backward()
+    #     delay(0.5)
 
-        if GUI:
-            cv2.waitKey(600)
-        else:
-            time.sleep(600)
+    #     r.backward()
 
-        r.stop()
+    #     delay(0.6)
 
-        r.set_left_speed(-BASE_SPEED)
-        if GUI:
-            cv2.waitKey(600)
-        else:
-            time.sleep(600)
+    #     r.stop()
 
-        r.stop()
+    #     r.set_left_speed(-BASE_SPEED)
+    #     delay(0.6)
 
-        r.set_right_speed(-BASE_SPEED)
+    #     r.stop()
 
-        if GUI:
-            cv2.waitKey(600)
-        else:
-            time.sleep(600)
+    #     r.set_right_speed(-BASE_SPEED)
 
-        r.stop()
+    #     delay(0.6)
 
-        time.sleep(100)
+    #     r.stop()
 
-        pass
+    #     time.sleep(100)
+
+    #     pass
 
     # # Run inference on the frame
-    # ball_results = r.ball_model(r.ball_frame)
-    # ball_result = ball_results[0]
-    # # silver_results = silver_model(frame2)
+    ball_results = r.ball_model(r.ball_frame)
+    ball_result = ball_results[0]
 
-    # # Visualize results
-    # ball_annotated_frame = ball_results[0].plot()
+    # Visualize results
+    ball_annotated_frame = ball_results[0].plot()
 
-    # for box in ball_result.boxes:
-    #     # 1. Get the class ID and name
-    #     class_id = int(box.cls[0])  # The numerical class ID (e.g., 0, 1)
-    #     class_name = ball_result.names[
-    #         class_id
-    #     ]  # Maps ID to the string name (e.g., "orange_ball")
+    for box in ball_result.boxes:
+        # 1. Get the class ID and name
+        class_id = int(box.cls[0])  # The numerical class ID (e.g., 0, 1)
+        class_name = ball_result.names[
+            class_id
+        ]  # Maps ID to the string name (e.g., "orange_ball")
 
-    #     # 2. Get the confidence score
-    #     confidence = float(box.conf[0])  # A float between 0 and 1
+        # 2. Get the confidence score
+        confidence = float(box.conf[0])  # A float between 0 and 1
 
-    #     # 3. Get the bounding box coordinates
-    #     # .xyxy gives you [x_min, y_min, x_max, y_max]
-    #     x1, y1, x2, y2 = map(int, box.xyxy[0])
+        # 3. Get the bounding box coordinates
+        # .xyxy gives you [x_min, y_min, x_max, y_max]
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
 
-    #     if GUI:
-    #         cv2.line(
-    #             ball_annotated_frame,
-    #             ((x1 + x2) // 2, y1),
-    #             ((x1 + x2) // 2, y2),
-    #             (0, 255, 0),
-    #             2,
-    #         )
+        if GUI:
+            cv2.line(
+                ball_annotated_frame,
+                ((x1 + x2) // 2, y1),
+                ((x1 + x2) // 2, y2),
+                (0, 255, 0),
+                2,
+            )
 
-    # # silver_annotated_frame = silver_results[0].plot()
-    # #
-    # if GUI:
-    #     cv2.line(
-    #         ball_annotated_frame,
-    #         (BALL_CAM_CAPTURE_WIDTH // 2, 0),
-    #         (BALL_CAM_CAPTURE_WIDTH // 2, BALL_CAM_CAPTURE_HEIGHT),
-    #         (0, 255, 0),
-    #         2,
-    #     )
+    if GUI:
+        cv2.line(
+            ball_annotated_frame,
+            (BALL_CAM_CAPTURE_WIDTH // 2, 0),
+            (BALL_CAM_CAPTURE_WIDTH // 2, BALL_CAM_CAPTURE_HEIGHT),
+            (0, 255, 0),
+            2,
+        )
 
-    #     cv2.imshow(ball_window, ball_annotated_frame)
+        cv2.imshow(ball_window, ball_annotated_frame)

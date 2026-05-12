@@ -4,11 +4,18 @@ import time
 import cv2
 
 from classes.Robot import Robot
-from constants import GREEN_CHECK_PERIOD_FRAMES, GUI, TIMESTEP, X11
+from constants import (
+    GREEN_CHECK_PERIOD_FRAMES,
+    GUI,
+    SILVER_CHECK_PERIOD_FRAMES,
+    TIMESTEP,
+    X11,
+)
 from gap.gap import gap
 from green_square.green_square import green_square
 from linetrace.linetrace import init, linetrace
 from obstacle.obstacle import obstacle
+from silver.silver import silver
 from victims.victim import victim, victim_init
 
 if GUI and not X11:
@@ -37,23 +44,28 @@ try:
         r.update()
         loop_idx += 1
 
-        # victim()
+        victim()
+
+        # Silver line detection (Rescue Zone entry)
+        if loop_idx % SILVER_CHECK_PERIOD_FRAMES == 0:
+            silver()
 
         # # Run green marker behavior at a lower frequency to keep line control smooth.
         handled_green = False
         if loop_idx % GREEN_CHECK_PERIOD_FRAMES == 0:
-            handled_green = green_square()
+            # handled_green = green_square()
+            pass
         if not handled_green:
             # Primary behavior: line follow
             # r.forward()
 
             # r.forward()
             #
-            linetrace()
+            # linetrace()
 
             # gap()
 
-            obstacle()
+            # obstacle()
 
             pass
 

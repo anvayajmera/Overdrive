@@ -212,7 +212,7 @@ class Robot:
 
         if not disable_cameras:
             if ENABLE_BALL_CAM:
-                self.ball_model = YOLO("./models/ball_detect_s.engine", task="detect")
+                self.ball_model = YOLO("./models/best.engine", task="detect")
 
                 self.ball_cam = open_camera(
                     "Ball",

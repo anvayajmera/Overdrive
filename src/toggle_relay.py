@@ -15,4 +15,4 @@ if GUI and not X11:
     os.environ.setdefault("DISPLAY", ":0")
 
 r = Robot()
-r.set_relay(True)
+r.set_relay(False)
